@@ -1,0 +1,322 @@
+---
+title: "Expresión diferencial"
+author: "Rodolfo Chávez"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    highlight: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = F, include = FALSE}
+library(tximport)
+library(tidyverse)
+library(ggplot2)
+library(edgeR)
+library(PCAtools)
+library(marray)
+library(pheatmap)
+source("funciones.R")
+```
+
+
+# Objetivos
+
+* Conocer el flujo de trabajo empleado en el análisis bioinformático de datos obtenidos por *RNA-seq*
+* Explicar el análisis de expresión diferencial empleando edgeR o DESeq2
+* Analizar un conjunto de datos de expresión empleando un script de edgeR
+
+# Introducción
+
+El avance en las tecnologías de secuenciación en los últimos años, ha permitido estudiar mayor número de secuencias genéticas provenientes de distintos organismos. Asímismo, los avances en el almacenamiento de la información secuenciada ha favorecido el análisis masivo de datos.
+
+* __Genómica__ (Secuenciación de genomas completos)
+* __Transcriptómica__ (Secuenciación de transcriptomas completos)
+* __Proteómica__ (Secuenciación de proteomas completos)
+
+El sufijo **"omica"** refiere el estudio completo de dicho nivel molecular.
+
+
+# Transcriptómica
+
+La secuenciación de transcriptomas completos permite conocer los genes que expresa una célula o un conjunto de células en un momento **determinado** y bajo condiciones **particulares**.
+
+Algunas de las preguntas que pueden responderse con el análisis de transcriptomas son:
+
+* Los genes o isoformas diferencialmente expresadas entre dos condiciones (Celúlas A vs Células B, Tratamiento A vs Tratamiento B, Tiempo A vs Tiempo B).
+* Co-expresión de genes entre grupos de muestras y asociación con fenotipos
+* Descubrimiento de nuevos genes e isoformas
+* Fusión de genes
+
+La técnica que permite realizar la secuenciación de los transcriptomas es la secuenciación del RNA (*RNA-seq*).
+
+Una vez secuenciadas las bibliotecas se genera una cantidad masiva de datos. 
+**¿qué a hacer con toda la información obtenida?**
+
+
+# Análisis bioinformático de los datos de secuenciación
+
+La cantidad de datos que se generan a partir de la secuenciación de RNA es inmensa. El análisis de expresión diferencial requiere seguir el siguiente *pipeline* o flujo de trabajo:
+
+![Pipeline](Pipeline.png)
+
+
+* 1. Control de calidad de las secuencias crudas
+* 2. Filtrado y limpieza de las secuencias
+En los siguientes vínculos encontrarán los manuales de [Trimmomatic](http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/TrimmomaticManual_V0.32.pdf) y [Cutadapt](https://cutadapt.readthedocs.io/en/stable/guide.html).
+* 3. Alineamineto
+Para una revisión detallada del algoritmo de **STAR**, pueden revisar el [artículo](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3530905/) publicado por sus desarrolladores. Asimismo la versión más reciente del [manual](https://github.com/alexdobin/STAR/blob/master/doc/STARmanual.pdf).
+* 4. Conteo y estimación de la abundancia.
+Nuevamente, para una revisión más profunda del manual de **RSEM**, pueden revisar el siguiente [artículo](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323) y el [manual](https://deweylab.github.io/RSEM/README.html) 
+
+Al finalizar el proceso de estimación de la abundancia, RSEM nos devuelve dos archivos por muestra:
+```{bash, echo = F}
+ls rsem/rsem/t05
+```
+
+Y tienen el siguiente contenido de archivos de texto plano:
+```{bash, echo = F}
+cat rsem/rsem/t05/t05.genes.results | head -n 4
+```
+
+Se requieren importar los datos generados (genes.results o .transcripts.results) por RSEM a R. Para ello se requiere de la librería de [tximport](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). Esta librería importa archivos de cuentas generados por:
+
+* Kallisto
+* Salmon
+* Cufflinks
+* Rsem
+* ... entre otros
+
+```{r, echo = F}
+my_dir <- ("rsem/")
+```
+
+
+```{r, echo = F}
+samples <- read.table(file.path(my_dir, "metadata.txt"), he = T)
+```
+
+Se requiere de una tabla de metadatos:
+```{r, echo = T}
+samples
+```
+
+Y una ruta hacia la ubicación de los archivos:
+```{r}
+##Se requiere crear una ruta al directorio en donde se encuentran los archivos
+files <- file.path("rsem/rsem/", samples$Sample, paste0(samples$Sample, ".genes.results"))
+names(files) <- samples$Name
+##Se corrobora que la ruta fue creada y contiene los nombres de los archivos correctamente
+data.frame(files = files, Exists = file.exists(files))
+```
+**Cuidado**: Revisar bien el orden (jerarqiía) y nombre de los directorios y archivos.
+
+Se importan los archivos empleando tximport
+```{r}
+txi.rsem <- tximport(files, type = "rsem", txIn = F, txOut = F)
+str(txi.rsem)
+##De la lista seleccionamos la matriz de cuentas
+counts <- txi.rsem$counts
+class(counts)
+head(counts)
+```
+
+Para el análisis de expresión diferencial requerimos que los valores de las cuentas sean números **enteros**. Recodificar los valores a ```integer``` y convertir la matriz de cuentas a un data frame:
+```{r}
+storage.mode(counts) <- "integer"
+##Recodificar la matriz de cuentas a data frame
+counts <- as.data.frame(counts)
+class(counts)
+names(counts)
+```
+
+```{r, echo = F}
+counts <- counts[, c(1, 3, 6, 4, 2, 5)]
+```
+
+# Filtrado de cuentas
+Filtrar los datos es muy útil. Los genes cuyos valores de cuentas son igual a 0 no aportan ninguna información interesante. Además, eliminar genes con bajos valores de cuentas nos evita obtener resultados falsos positivos.
+```{r}
+##Seleccionando genes con al menos 1 cuenta por millón (cpm) en al menos 2 muestras
+keep <- rowSums(cpm(counts) >= 5) >=2
+table(keep)
+##Cortando los datos originales
+counts <- counts[keep, ]
+```
+Es recomendable no realizar un filtrado astringente, de lo contrario se recuperan solamente genes "housekeeping".
+
+Tanto para **edgeR** como **DESeq2** requerimos almacenar las cuentas y algunos metadatos en un objeto de forma de lista.
+
+# edgeR
+Para construir la lista de edgeR requerimos indicar cuáles son los grupos que se compararán y el número de réplicas por grupo:
+```{r}
+colnames(counts)
+##Usar los nombres de las columnas de la matriz de cuentas para seleccionar los dos grupos experimentales
+groups <- factor(sub("..$", "", colnames(counts)))
+table(groups)
+```
+Crear la lista empleando la matriz de cuentas y los grupos:
+```{r}
+edgeRlist <- DGEList(counts = counts,
+                     group = groups, 
+                     genes = rownames(counts))
+str(edgeRlist)
+```
+Posteriormente los datos de normalizan empleando el método de los [TMM](https://www.youtube.com/watch?v=Wdt6jdi-NQo&t=393s) (weighted Trimmed Mean of M-values). Para ello edgeR busca y elimina los valores atípicos (expresión absoluta de muestra como expresión relativa entre muestra) y calcula los factores de normalización.
+```{r}
+edgeRlist <- calcNormFactors(edgeRlist, method = "TMM")
+edgeRlist$samples
+```
+Es importante inspeccionar que los datos se encuentren correctamente normalizados. Para ello, las gráficas de la expresión absoluta vs expresión relativa para cada muestra deben tener una forma de "trompeta":
+```{r, echo = F}
+par(mfrow = c(2, 3))
+for (i in c(1, 2, 3, 4, 5, 6)) {
+  plotMD(cpm(edgeRlist, log = T), column = i)
+grid(col = "blue")
+abline(h = 0, col = "red", lty = 2, lwd = 2)
+}
+```
+
+La consistencia de las réplicas la podemos verificar mediante un análisis de componentes principales (PCA) o calculando la correlación (Pearson) que existe entre las muestras:
+```{r, echo = F}
+p <- cpm(edgeRlist$counts, log = T)
+p <- pca(p)
+
+biplot(p, lab = colnames(edgeRlist$counts), pointSize = 10,
+       title = "PCA")
+```
+```{r, echo = F}
+cormat <- cor(cpm(edgeRlist$counts, log = T))
+pheatmap(cormat, border_color = NA, main = "Correlation of replicates")
+```
+
+Para el análisis de expresión diferencial requerimos:
+
+* Crear una matriz del diseño experimental
+* Calcular la dispersión de los datos
+* Crear una matriz de contrastes
+
+## Matriz de diseño experimental
+En esta matriz le vamos a indicar a edgeR cuáles muestras corresponden a un grupo o condición experimental. Dado que algunos experimentos pueden tener diseños muy complejos (una muestra pertenece a un tipo celular y a un tratamiento) empleamos la función interna en R de modelado de matrices:
+```{r}
+design <- model.matrix(~0+edgeRlist$samples$group)
+##El término ~0 le indica a la función no incluir una columna de intersecciones y solamente incluir tantas columnas como grupos en nuestro diseño experimental
+colnames(design) <- levels(edgeRlist$samples$group)
+
+design
+```
+
+## Dispersión de los datos
+Como edgeR ajusta los datos a un modelo de distribución bi-nomial negativo (parecido a Poisson) se requiere calcular un parámetro adicional de dispersión de los datos. 
+```{r}
+edgeRlist <- estimateDisp(edgeRlist, design = design, robust = T)
+plotBCV(edgeRlist)
+```
+
+edgeR calcula la dispersión a tres niveles:
+
+* Common. Valor representativo de todos los genes
+* Trended. Calculada por rangos de nivel de expresión (expresión baja - expresión alta)
+* Tagwise. Valor individual para cada gen
+
+## Matriz de contrastes
+edgeR en los análisis de expresión diferencial puede obviar las comparaciones entre los grupos experimentales. Sin embargo, es bueno contar con una matriz de contrastes para indicarle a edgeR cuáles son las comparaciones que queremos hacer entre los datos.
+```{r}
+contrast <- makeContrasts(
+  "Cells" = "B_CT - A_CT", 
+  levels = edgeRlist$design
+)
+
+contrast
+```
+En este caso, solo tenemos dos condiciones experimentales "Células A" y "Células B". Con esta matriz de contrastes indicamos que la comparación será buscando los genes diferencialmente expresados en B con respecto a A. Sin embargo, si tuvieramos mayor cantidad de grupos experimentales los podemos comparar, por ejemplo:
+
+Células CT = X, Y, Z
+
+Células Tx = P, Q, R
+
+```makeContrast("Cells" = "(P + Q + R)/3 - (X, Y, Z)/3")``` 
+
+El objetivo es que los coeficientes sumen 0
+
+## Análisis de expresión diferencial
+
+Lo primero que tenemos que realizar es ajustar los datos a un modelo lineal bi-nomial negativo. Para ello se utilizará la función ```glmQLfit``` con la cual se tiene un control más robusto del "error rate".
+```{r}
+fit <- glmQLFit(edgeRlist, design = design, robust = T)
+```
+
+Se realiza la comparación para obtener los genes diferencialmente expresados entre una condición y otra. Con la función ```glmQLFTest```, estamos probando la hipótesis nula "el valor de lfc del gen A es igual a 0". Por lo tanto, los valores de p y p.adj calculados están hechos con respecto a dicha hipótesis nula.
+```{r}
+qlf.BvsA <- glmQLFTest(fit, ##Objeto en forma de lista con los datos ajustados a un modelo bi-nomial negativo
+                       contrast = contrast[, "Cells"]) ##Matriz de contrastes
+##Obtenemos los DEG con expresión distinta de 1, valor de p menor a 0.05, corrigiendo el valor de p por el método de Benjamini-Hochberg
+deg.BvsA <- decideTestsDGE(qlf.BvsA, p.value = 0.05, adjust.method = "BH", lfc = 0)
+table(deg.BvsA)
+##Guardamos los resultados en un data.frame
+DEG.BvsA <- DEGResults(qlf.BvsA)
+##Añadimos una columna extra a los resultados anteriores indicando la condición de expresión respecto al lfc y al FDR
+DEG.BvsA <- edgeResults(DEG.BvsA, logfc = 0, padj = 0.05)
+```
+
+Los datos los visualizamos graficando un **"Volcano plot"**
+```{r, echo = F}
+volcano_edgeR(DEG.BvsA, lfc = 0, padj = 0.05)
+```
+
+Un procedimiento muy común es seleccionar aquellos genes cuya expresión difeerencial haya sido **significativa** y que cumplan con un valor de lfc. Por ejemplo: |lfc| > 1 (es decir genes con cuya expresión es > 2 o < 0.5 respecto al CT)
+
+```{r}
+volcano_edgeR(DEG.BvsA, lfc = 1, padj = 0.05)
+significant.1 <- DEG.BvsA %>% filter(logFC > 1 & FDR < 0.05 | logFC < -1 & FDR < 0.05)
+paste(length(significant.1$genes), "is the number of significant genes")
+```
+
+¡Cuidado! Filtrar los resultados de esta manera es incorrecto. Recordar que en el análisis de expresión diferencial probamos la hipótesis nula "El |lfc| del gen A es diferente de cero" y los valores de p y FDR corresponden a dicha prueba. El asumir que estos genes filtrados tienen |lfc| > 1 con el valor de FDR previamente calculado provoca un sesgo. Favorece genes con baja expresión y alta variabilidad, invalidando el poder estadístico de la prueba. En otras palabras, incrementamos el riesgo de captar resultados falsos positivos.
+
+Para resolver este problema, tanto edgeR como DESeq2 implementan funciones en donde se prueba la hipótesis nula "el |lfc| del gen A es distinto a x":
+```{r}
+qlf.BvsA.lfc1 <- glmTreat(fit, 
+              contrast = contrast[, "Cells"], 
+              lfc = 1)
+deg.BvsA.lfc1 <- decideTestsDGE(qlf.BvsA.lfc1, p.value = 0.05, adjust.method = "BH", lfc = 1)
+table(deg.BvsA.lfc1)
+```
+
+De esta manera podemos seleccionar los genes que estadísticamente tienen |lfc| > 1 y robustecer nuestros resultados.
+```{r}
+DEG.BvsA.lfc1 <- DEGResults(qlf.BvsA.lfc1)
+DEG.BvsA.lfc1 <- edgeResults(DEG.BvsA.lfc1, logfc = 1, padj = 0.05)
+```
+
+Visualizamos estos datos en un nuevo volcano plot
+```{r}
+volcano_edgeR(DEG.BvsA.lfc1, lfc = 1, padj = 0.05)
+significant.genes <- DEG.BvsA.lfc1 %>% filter(FDR < 0.05 & logFC > 1 | FDR < 0.05 & logFC < -1)
+paste("The number of significant genes with |lfc| > 1 is", length(significant.genes$genes))
+```
+
+Finalmente, los los genes diferencialmente expresados podemos emplearlos para crear mapas de calor **"heatmaps"**:
+```{r}
+##Obtener los nombres o ids de los genes con expresión diferencial
+significant.ids <- significant.genes$genes
+##Crear una matriz de cuentas normalizadas por cpm empleando las cuentas que se encuentran guardadas en el objeto edgeRlist
+significant.cpm <- cpm(edgeRlist$counts, log = T)
+##Cortamos los genes con expresión significativa
+significant.cpm <- significant.cpm[significant.ids, ]
+
+##Generamos una paleta de colores
+RedBlackGreen <- maPalette(low = "green", high = "red", mid = "black")
+##Obtenemos el heatmap
+pheatmap(significant.cpm, 
+         border_color = NA, 
+         color = RedBlackGreen, 
+         show_rownames = F, 
+         scale = "row")
+```
+
