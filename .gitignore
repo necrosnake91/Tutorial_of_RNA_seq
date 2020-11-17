@@ -1,0 +1,4 @@
+#ignore some files
+*.RData
+*.DS_Store
+*.Rhistory
