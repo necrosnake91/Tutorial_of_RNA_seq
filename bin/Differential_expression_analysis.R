@@ -9,14 +9,14 @@ library(DESeq2)
 library(PCAtools)
 library(marray)
 library(pheatmap)
-source("funciones.R")
+source("functions.R")
 
 #--------------------------------------Data importation--------------------------------
 ##In this case, count matrix is provided as a .txt file
 counts <- read.table("../results/counts.txt", he = T)
 
 #--------------------------------------Data exploration--------------------------------
-##First, genes with low count values must be excluded. Select genes with at least 3 cpm in at leats 2 samples
+##First, genes with low abundance must be excluded. Select genes with at least 3 cpm in at leats 2 samples
 keep <- rowSums(cpm(counts, log = T) > 3) > 2
 ##Visualize how many genes passed the filtering criteria
 table(keep)
@@ -27,7 +27,7 @@ counts <- counts[keep, ]
 groups <- factor(sub("..$", "", names(counts))) ##"..$" indicates substitute the two last characters with "" (nothing)
 table(groups)
 
-##Store the counts and the groups data in an edgeR object
+##Store the counts and the groups in an edgeR object
 edgeRlist <- DGEList(counts = counts, 
                      group = groups, 
                      genes = rownames(counts))
@@ -36,13 +36,14 @@ edgeRlist <- calcNormFactors(edgeRlist, method = "TMM")
 ##Visualize the normalization factors
 edgeRlist$samples
 ##Plot the results using absolute vs relative expression in each sample
+pdf("../results/MD_plots.pdf", height = 7, width = 10)
+par(mfrow = c(2, 3)) ##Generate a frame to store 6 plots in 2 rows and 3 columns
 for (i in c(1:6)) {
-png(paste0("../results/", i, ".png"), height = 400, width = 500)
   print(plotMD(cpm(edgeRlist, log = T), column = i))
   grid(col = "blue")
   abline(h = 0, col = "red", lty = 2, lwd = 2)
-dev.off()
 }
+dev.off()
 ##Inspect replicates by performing a PCA analysis
 pca <- pca(cpm(edgeRlist$counts, log = T))
 ##Plot the results
@@ -62,7 +63,7 @@ edgeRlist <- estimateDisp(edgeRlist, design = design, robust = T)
 png("../results/data_dispersion.png", height = 700, width = 800)
 plotBCV(edgeRlist)
 dev.off()
-##Contruct the contrast matrix. In this case we are going to compare poison treated cells vs CT
+##Construct the contrast matrix. In this case we are going to compare poison treated cells vs CT
 contrast <- makeContrasts(
   "Poison" = "A_poison - A_CT",
   levels = edgeRlist$design
@@ -82,7 +83,7 @@ DEGPoison_vs_CT <- DEGResults(qlf)
 ##Create a volcano plot by adding a new column according to |lfc| > 0 and FDR < 0.05 values
 DEGPoison_vs_CT <- edgeResults(DEGPoison_vs_CT, logfc = 0, padj = 0.05)
 ##Get the volcano plot
-png("../results/Volcano_plot.png", height = 600, width = 400)
+png("../results/Volcano_plot.png", height = 600, width = 550)
 volcano_edgeR(DEGPoison_vs_CT, lfc = 0, padj = 0.05)+
   xlim(c(-5, 5))
 dev.off()
