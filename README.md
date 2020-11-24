@@ -41,6 +41,8 @@ This folder stores the required scripts to run the DE analysis in R:
 
 ### ```results/```
 This folder will store all the plots, in .png format, created by running 
-[```Differential_expression_analysis.R```](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/bin/Differential_expression_analysis.R) script. Please, after cloning this repository, save the provided count matrix ```counts.txt``` in this folder.
+[```Differential_expression_analysis.R```](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/bin/Differential_expression_analysis.R) script. Also, the count matrix ```counts.txt``` is stored in this folder.
+
+Additionally, you will find ```Differential_expression_analysis_tutorial.html``` file which contains the presentation.
 
 I suggest you take a read to the user's manual for each package in order to find useful information to perform DE analysis on your data. 
