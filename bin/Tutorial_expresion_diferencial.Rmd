@@ -184,10 +184,6 @@ class(counts)
 names(counts)
 ```
 
-```{r, echo = F}
-counts <- counts[, c(1, 3, 6, 4, 2, 5)]
-```
-
 **Filtrado de cuentas**
 Filtrar los datos es muy útil. Los genes cuyos valores de cuentas son igual a 0 no aportan ninguna información interesante al análisis. Además, eliminar genes con bajos valores de cuentas nos evita obtener resultados falsos positivos.
 ```{r}
@@ -223,7 +219,7 @@ edgeRlist$samples
 ```
 Es importante inspeccionar los datos y verificar que estén correctamente normalizados. Para ello, se grafica la expresión absoluta vs expresión relativa para cada muestra:
 ```{r, echo = F}
-par(mfrow = c(2, 6))
+par(mfrow = c(4, 3))
 for (i in c(1:12)) {
   plotMD(cpm(edgeRlist, log = T), column = i)
 grid(col = "blue")
