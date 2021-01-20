@@ -37,8 +37,8 @@ edgeRlist <- calcNormFactors(edgeRlist, method = "TMM")
 edgeRlist$samples
 ##Plot the results using absolute vs relative expression in each sample
 pdf("../results/MD_plots.pdf", height = 7, width = 10)
-par(mfrow = c(2, 3)) ##Generate a frame to store 6 plots in 2 rows and 3 columns
-for (i in c(1:6)) {
+par(mfrow = c(2, 6)) ##Generate a frame to store 6 plots in 2 rows and 3 columns
+for (i in c(1:12)) {
   print(plotMD(cpm(edgeRlist, log = T), column = i))
   grid(col = "blue")
   abline(h = 0, col = "red", lty = 2, lwd = 2)
@@ -65,7 +65,7 @@ plotBCV(edgeRlist)
 dev.off()
 ##Construct the contrast matrix. In this case we are going to compare poison treated cells vs CT
 contrast <- makeContrasts(
-  "Poison" = "A_poison - A_CT",
+  "Poison" = "A_Verafinib - A_Control",
   levels = edgeRlist$design
 )
 contrast
@@ -106,3 +106,7 @@ pheatmap(significant_cpm,
          scale = "row", 
          angle_col = 0)
 dev.off()
+
+##Save the results
+write.table(DEGPoison_vs_CT, "../results/All_DEG_Verafinib.txt", sep = "\t", quote = F)
+write.table(significant_genes, "../results/Significant_DEG_Verafinib.txt", sep = "\t", quote = F)
