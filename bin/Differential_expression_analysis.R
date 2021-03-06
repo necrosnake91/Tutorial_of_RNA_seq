@@ -14,6 +14,8 @@ source("functions.R")
 #--------------------------------------Data importation--------------------------------
 ##In this case, count matrix is provided as a .txt file
 counts <- read.table("../results/counts.txt", he = T)
+samples <- read.table("../RSEM/metadata.txt", he = T)
+rownames(samples) <- colnames(counts)
 
 #--------------------------------------Data exploration--------------------------------
 ##First, genes with low abundance must be excluded. Select genes with at least 3 cpm in at leats 2 samples
@@ -65,7 +67,7 @@ plotBCV(edgeRlist)
 dev.off()
 ##Construct the contrast matrix. In this case we are going to compare poison treated cells vs CT
 contrast <- makeContrasts(
-  "Poison" = "A_Verafinib - A_Control",
+  "Poison" = "(A_Verafinib + M_Verafinib)/2 - (A_Control + M_Control)/2",
   levels = edgeRlist$design
 )
 contrast
@@ -77,7 +79,6 @@ qlf <- glmQLFTest(fit, contrast = contrast[, "Poison"])
 ##Visualize how many genes rejected the null hypothesis with a FDR threshold of 0.05
 degPoison_vs_CT <- decideTestsDGE(qlf, p.value = 0.05, adjust.method = "BH", lfc = 0)
 table(degPoison_vs_CT)
-
 ##Store the results in a df
 DEGPoison_vs_CT <- DEGResults(qlf)
 ##Create a volcano plot by adding a new column according to |lfc| > 0 and FDR < 0.05 values
@@ -87,12 +88,13 @@ png("../results/Volcano_plot.png", height = 600, width = 550)
 volcano_edgeR(DEGPoison_vs_CT, lfc = 0, padj = 0.05)+
   xlim(c(-5, 5))
 dev.off()
+volcanoplotR(DEGPoison_vs_CT, logfc = 0, p.adj = 0.05, type = "edgeR")
 
 ##Get all significant DE genes
 significant_genes <- DEGPoison_vs_CT %>% filter(logFC > 0 & FDR < 0.05 | logFC < 0 & FDR < 0.05)
 significant_ids <- significant_genes$genes
 ##Get the cpm values of significant DE genes
-significant_cpm <- cpm(edgeRlist$counts, log = T) 
+significant_cpm <- cpm(edgeRlist, log = T) 
 ##Cut the significant DE genes 
 significant_cpm <- significant_cpm[significant_ids, ]
 ##Create a nice color palette (You are able to change the colors anytime!)
@@ -106,6 +108,18 @@ pheatmap(significant_cpm,
          scale = "row", 
          angle_col = 0)
 dev.off()
+
+#-------------------------------------DESeq2------------------------------------------
+dds <- DESeqDataSetFromMatrix(countData = counts, 
+                              colData = samples, 
+                              design = ~ Cell + Treatment)
+
+keep2 <- rowSums(counts(dds) >= 3) >= 2
+dds <- dds[keep2, ]
+dds <- DESeq(dds)
+res <- results(dds)
+res <- as.data.frame(res)
+volcanoplotR(res, logfc = 0, p.adj = 0.05, type = "DESeq")
 
 ##Save the results
 write.table(DEGPoison_vs_CT, "../results/All_DEG_Verafinib.txt", sep = "\t", quote = F)
