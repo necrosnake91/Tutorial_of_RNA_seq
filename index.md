@@ -1,37 +1,48 @@
-## Welcome to GitHub Pages
+## Tutorial for Differential Expression analysis
 
-You can use the [editor on GitHub](https://github.com/necrosnake91/Tutorial_of_RNA_seq/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+Hello everyone! 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+Welcome to this GitHub repository. This repository was designed to provide you a wide view for the Differential Expression (DE) analysis using bioconductor packages **[edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html)** and **[DESeq2](http://bioconductor.org/packages/release/bioc/html/DESeq2.html)**.
 
-### Markdown
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Required packages
 
-```markdown
-Syntax highlighted code block
+Before running the analysis, please install the following R packages:
 
-# Header 1
-## Header 2
-### Header 3
+* __tidyverse__
+* __pheatmap__
+* __edgeR__ ```BiocManager::install("edgeR")```
+* __DESeq2__ ```BiocManager::install("DESeq2")```
+* __PCAtools__ ```BiocManager::install("PCAtools")```
+* __marray__ ```BiocManager::install("marray")```
 
-- Bulleted
-- List
+Make sure that you have installed the last version of BioConductor. If not, run the next lines on R:
 
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.12")
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+## Folder content
 
-### Jekyll Themes
+This is the distribution of folders and files in this repository:
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/necrosnake91/Tutorial_of_RNA_seq/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+```
++-- Tutorial for Differential Expression analysis
+|		+--bin/
+|		+--results/
+```
+### ```bin/```
+This folder stores the required scripts to run the DE analysis in R:
 
-### Support or Contact
+* ```Differential_expression_analysis.R``` Script for performing DE analysis using edgeR package.
+*  ```functions.R``` This script contains some functions to recodificate the results (edgeR or DESeq2) of DE genes into a dataframe and to create volcano plots.
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+### ```results/```
+This folder will store all the plots, in .png format, created by running 
+[```Differential_expression_analysis.R```](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/bin/Differential_expression_analysis.R) script. Also, the count matrix ```counts.txt``` is stored in this folder.
+
+Additionally, you will find ```Differential_expression_analysis_tutorial.html``` file which contains the presentation.
+
+I suggest you take a read to the user's manual for each package in order to find useful information to perform DE analysis on your data. 
