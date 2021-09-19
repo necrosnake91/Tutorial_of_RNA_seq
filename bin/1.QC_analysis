@@ -8,7 +8,7 @@ mkdir -p ../fastqc_output
 mkdir -p ../multiquc_output
 
 ##Run fastqc
-fastqc ../data/*.fastq.gz -o ../fastqc_output
+fastqc ../data/fastq_files/*.fastq.gz -o ../fastqc_output
 
 ##Run multiqc
 multiqc ../fastqc_output/*.zip -o ../multiquc_output
