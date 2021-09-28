@@ -2,125 +2,148 @@
 
 #--------------------------------------Packages--------------------------------
 ##Load the required packages
-library(ggplot2)
 library(tidyverse)
-library(edgeR)
+library(tximeta)
+library(here)
 library(DESeq2)
+library(apeglm)
 library(PCAtools)
-library(marray)
+library(Glimma)
+library(RColorBrewer)
 library(pheatmap)
+library(clusterProfiler)
+library(biomaRt)
+library(enrichplot)
+library(fgsea)
 source("functions.R")
-
 #--------------------------------------Data importation--------------------------------
-##In this case, count matrix is provided as a .txt file
-counts <- read.table("../results/counts.txt", he = T)
-samples <- read.table("../RSEM/metadata.txt", he = T)
-rownames(samples) <- colnames(counts)
-
-#--------------------------------------Data exploration--------------------------------
-##First, genes with low abundance must be excluded. Select genes with at least 3 cpm in at leats 2 samples
-keep <- rowSums(cpm(counts, log = T) > 3) > 2
-##Visualize how many genes passed the filtering criteria
+##Read the metadata file
+coldata <- read.table("../salmon_quants/metadata.txt", he = T, sep = "\t", stringsAsFactors = T)
+##Add the path to quant files
+coldata <- mutate(coldata, files = file.path(here("salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf")) 
+##Check if path to quant files is ok
+coldata <- mutate(coldata, exist = file.exists(coldata$files))
+##Create a new column consisting of key values  plus _quant
+coldata <- mutate(coldata, names = paste0(coldata$key, "_quant"))
+##Set rownames of coldata by using the unique id (treatment + replicate)
+rownames(coldata) <- coldata$unique_id
+##Read the files using tximeta
+se <-  tximeta(coldata)
+##Get the counts by sumarizing at gene level
+gse <- summarizeToGene(se)
+#-------------------------------------Data exploration---------------------------------
+##Create the DESeq object using the  information stored in the tximeta summarizedExperiment
+dds <- DESeqDataSet(se = gse, 
+                    design = ~ Treatment)
+##Relevel the control group
+levels(dds$Treatment)
+dds$Treatment <- relevel(dds$Treatment, "siRNA_control")
+##Remove genes with low abundance (low counts) using the following threshold
+keep <- rowSums(counts(dds) >= 1) >= 3 ##Keep genes showing at least 1 raw count in at least 3 samples
+##Visualize how many genes passed  the filtering criteria
 table(keep)
-##Cut the genes which passed filtering criteria in the original matrix
-counts <- counts[keep, ]
-
-##Create a factor object to indicate the name of the experimental conditions
-groups <- factor(sub("..$", "", names(counts))) ##"..$" indicates substitute the two last characters with "" (nothing)
-table(groups)
-
-##Store the counts and the groups in an edgeR object
-edgeRlist <- DGEList(counts = counts, 
-                     group = groups, 
-                     genes = rownames(counts))
-##Calculate the normalization factors using the TMM method
-edgeRlist <- calcNormFactors(edgeRlist, method = "TMM")
-##Visualize the normalization factors
-edgeRlist$samples
-##Plot the results using absolute vs relative expression in each sample
-pdf("../results/MD_plots.pdf", height = 7, width = 10)
-par(mfrow = c(2, 6)) ##Generate a frame to store 6 plots in 2 rows and 3 columns
-for (i in c(1:12)) {
-  print(plotMD(cpm(edgeRlist, log = T), column = i))
-  grid(col = "blue")
-  abline(h = 0, col = "red", lty = 2, lwd = 2)
-}
-dev.off()
-##Inspect replicates by performing a PCA analysis
-pca <- pca(cpm(edgeRlist$counts, log = T))
-##Plot the results
-png("../results/PCA.png", height = 700, width = 800)
-biplot(pca, lab = colnames(edgeRlist$counts), pointSize = 15, title = "PCA", labSize = 10)
-dev.off()
-
-#--------------------------------------Differential expression analysis--------------------------------
-##Get the design matrix
-design <- model.matrix(~0+edgeRlist$samples$group)
-##Write the colnames of the design matrix by using the levels of the experimental groups
-colnames(design) <- levels(edgeRlist$samples$group)
-design
-##Estimate data dispersion
-edgeRlist <- estimateDisp(edgeRlist, design = design, robust = T)
-##Visualize the dispersion levels
-png("../results/data_dispersion.png", height = 700, width = 800)
-plotBCV(edgeRlist)
-dev.off()
-##Construct the contrast matrix. In this case we are going to compare poison treated cells vs CT
-contrast <- makeContrasts(
-  "Poison" = "(A_Verafinib + M_Verafinib)/2 - (A_Control + M_Control)/2",
-  levels = edgeRlist$design
-)
-contrast
-
-##Adjust data to a negative bi-nomial generalized linear model and using the trended dispersion
-fit <- glmQLFit(edgeRlist, design = design, robust = T,  dispersion = edgeRlist$trended.dispersion)
-##Test the null hypothesis in which lfc of genes in the poison group are equal to zero respect to CT
-qlf <- glmQLFTest(fit, contrast = contrast[, "Poison"])
-##Visualize how many genes rejected the null hypothesis with a FDR threshold of 0.05
-degPoison_vs_CT <- decideTestsDGE(qlf, p.value = 0.05, adjust.method = "BH", lfc = 0)
-table(degPoison_vs_CT)
-##Store the results in a df
-DEGPoison_vs_CT <- DEGResults(qlf)
-##Create a volcano plot by adding a new column according to |lfc| > 0 and FDR < 0.05 values
-DEGPoison_vs_CT <- edgeResults(DEGPoison_vs_CT, logfc = 0, padj = 0.05)
-##Get the volcano plot
-png("../results/Volcano_plot.png", height = 600, width = 550)
-volcano_edgeR(DEGPoison_vs_CT, lfc = 0, padj = 0.05)+
-  xlim(c(-5, 5))
-dev.off()
-volcanoplotR(DEGPoison_vs_CT, logfc = 0, p.adj = 0.05, type = "edgeR")
-
-##Get all significant DE genes
-significant_genes <- DEGPoison_vs_CT %>% filter(logFC > 0 & FDR < 0.05 | logFC < 0 & FDR < 0.05)
-significant_ids <- significant_genes$genes
-##Get the cpm values of significant DE genes
-significant_cpm <- cpm(edgeRlist, log = T) 
-##Cut the significant DE genes 
-significant_cpm <- significant_cpm[significant_ids, ]
-##Create a nice color palette (You are able to change the colors anytime!)
-PinkBlue <- maPalette(low = rgb(1, 0, 1), high = rgb(0, 0, 1), mid = rgb(0.6, 0.5, 1))
-##Plot a heatmap
-png("../results/Heatmap.png", height = 600, width = 800)
-pheatmap(significant_cpm, 
-         color = PinkBlue, 
-         border_color = NA, 
-         show_rownames = F, 
-         scale = "row", 
-         angle_col = 0)
-dev.off()
-
-#-------------------------------------DESeq2------------------------------------------
-dds <- DESeqDataSetFromMatrix(countData = counts, 
-                              colData = samples, 
-                              design = ~ Cell + Treatment)
-
-keep2 <- rowSums(counts(dds) >= 3) >= 2
-dds <- dds[keep2, ]
+##Cut the genes from the dds object
+dds <-  dds[keep, ]
+##Perform PCA analysis using the PCA tools package
+rld <- rlog(dds, blind = F) ##Normalize the raw count values by using the regularized-logarithm transformation
+pca <- pca(mat = assay(rld), metadata = colData(rld), scale = T) ##Create a PCA object
+biplot(pca, lab = rownames(colData(rld)), colby = "Treatment") ##Get the biplot of the two main components
+##Visualize the data using  an interactive MDS plot
+glimmaMDS(dds)
+#-------------------------------------Differential expression analysis---------------------------------
+##Run the DESeq function to normalize counts and adjust the data to the negative bi-nomial model
 dds <- DESeq(dds)
-res <- results(dds)
+##Get the results from the differential expression analysis
+res <- results(dds) ##As default, we are testing for genes showing |lfc| > 0 and padj < 0.1
+summary(res)
 res <- as.data.frame(res)
-volcanoplotR(res, logfc = 0, p.adj = 0.05, type = "DESeq")
-
-##Save the results
-write.table(DEGPoison_vs_CT, "../results/All_DEG_Verafinib.txt", sep = "\t", quote = F)
-write.table(significant_genes, "../results/Significant_DEG_Verafinib.txt", sep = "\t", quote = F)
+volcanoplotR(res, logfc = 0, p.adj = 0.1)
+##Compare the results from siRNA_NRF2 vs siRNA_control treatment
+res_sirna <- results(dds, lfcThreshold = 0, alpha = 0.01)
+summary(res_sirna)
+##Visualize the data using a MA-plot
+plotMA(res_sirna)
+##Shrunk the logFC for genes with low counts
+resultsNames(dds)
+res_shrink <- lfcShrink(dds, res = res_sirna, coef = "Treatment_siRNA_NRF2_vs_siRNA_control", type = "apeglm")
+plotMA(res_shrink)
+res_shrink <- as.data.frame(res_shrink)
+res_sirna <- as.data.frame(res_sirna)
+volcanoplotR(res_shrink, logfc = 0, p.adj = 0.01)
+##Get the list of differentialy expressed genes
+deg <- dplyr::filter(res_shrink, log2FoldChange > 0 & padj < 0.01 |
+                log2FoldChange < 0 & padj < 0.01)
+##Get the normalized counts matrix
+norm_counts <- counts(dds, normalized = T)
+##Plot the heatmap
+##Obtain the annotation for the columns of the heatmap
+annotation_col <- data.frame(coldata[1:6, c(2, 4)])
+##Select a nice palette
+RdBlu <- brewer.pal(n= 10, name = "RdBu")
+pheatmap(norm_counts[rownames(deg), 1:6], scale = "row", 
+         border_color = NA, show_rownames = F, clustering_distance_rows = "euclidean",  
+         clustering_distance_cols = "euclidean", clustering_method = "single", show_colnames = F, 
+         annotation_col = annotation_col, 
+         color = RdBlu)
+#-------------------------------------Annotation analysis---------------------------------
+#-------------------------------------ORA---------------------------------
+##Convert the ensembl gene ids into entrezgene and hgnc symbol
+##Retrieve information from ensembl database
+ensembl <- useMart("ensembl")
+ensembl <- useDataset("hsapiens_gene_ensembl", mart = ensembl)
+##Get the list of up- and down regulated genes differentially expressed
+up_DEG  <- dplyr::filter(deg, log2FoldChange > 0) %>% rownames_to_column(var = "ensembl_gene_id")
+down_DEG <- filter(deg, log2FoldChange < 0) %>% rownames_to_column(var = "ensembl_gene_id")
+##Covert the ids
+up_DEG <- id_converter(mart = ensembl, ##Object with ensembl db information
+            input = up_DEG, 
+            attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), ##Name of the attributes to get in the output
+            filter = "ensembl_gene_id") ##Name of the attribute (column) of the input to match with db
+down_DEG <- id_converter(mart = ensembl,
+                         input = down_DEG, 
+                         attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), 
+                         filter = "ensembl_gene_id")
+##Read the gmt files for GOBP database
+go <- read.gmt("../data/c5.go.bp.v7.4.entrez.gmt")
+##Perform ORA
+ego_up <- enricher(gene = up_DEG$entrezgene_id, ##Select he column of entrez gene ids from the converted list
+                   TERM2GENE = go, ##This is the background information. In this case use the GO db
+                   pAdjustMethod = "BH", ##For multiple testing, adjust p values by using the  Benjamini-Hoechberg method
+                   pvalueCutoff = 0.05) ##Cutoff to keep pathways or gene sets showing  padj < 0.05
+ego_down <- enricher(gene = down_DEG$entrezgene_id, 
+                     TERM2GENE = go, 
+                     pAdjustMethod = "BH", 
+                     pvalueCutoff = 0.05)
+##Visualize the results
+dotplot(ego_up)
+barplot(ego_up)
+ego_up <- pairwise_termsim(ego_up)
+treeplot(ego_up)
+#-------------------------------------GSEA---------------------------------
+##For GSEA analysis, use the results obtained after the differential expression analysis
+res_shrink <- rownames_to_column(res_shrink, var = "ensembl_gene_id")
+##Convert ensembl gene ids from  results data frame
+res_shrink <- id_converter(mart = ensembl,  
+                           input = res_shrink, 
+                           attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), 
+                           filter = "ensembl_gene_id")
+##Calculate the metric to rank the genes. Metric = -log10(padj)*log2FoldChange
+res_shrink <- drop_na(res_shrink) %>%##Eliminate NA values
+  mutate(stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange) %>%
+  dplyr::arrange(desc(stat)) ##Sort the data frame respect to the stat metric
+##For GSEA input create a named vector using the stat value
+gsea_list <- res_shrink$stat
+names(gsea_list) <- res_shrink$entrezgene_id ##Name the elements using the entrezgene id
+##Load the database again
+go <- gmtPathways("../data/c5.go.bp.v7.4.entrez.gmt")
+##Perform GSEA
+GSEA_res <- fgseaMultilevel(go, 
+                            gsea_list, 
+                            minSize = 15, ##Exclude gene sets with less than 15 genes
+                            maxSize = 500) ##Exclude gene sets with more than 500 genes
+##Tidy the results and add a column depending on the value of padj
+GSEA_res <- as.tibble(GSEA_res) %>%
+  arrange(desc(NES)) %>%
+  mutate(Significance = ifelse(padj < 0.05, "Significant", "NS"))
+##Plot the results
+barplot_GSEA(GSEA_res, Head = 20, Tail = 20)
