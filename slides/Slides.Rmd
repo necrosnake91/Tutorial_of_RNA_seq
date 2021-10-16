@@ -59,6 +59,41 @@ pre {
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
 }
+
+/* From https://github.com/garthtarr/sydney_xaringan */
+blockquote, .blockquote {
+  display: block;
+  margin-top: 0.1em;
+  margin-bottom: 0.2em;
+  margin-left: 5px;
+  margin-right: 5px;
+  border-left: solid 10px #0148A4;
+  border-top: solid 2px #0148A4;
+  border-bottom: solid 2px #0148A4;
+  border-right: solid 2px #0148A4;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  /* background-color: #e64626; */
+  color: #e64626;
+  padding: 0.5em;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+/* From https://github.com/garthtarr/sydney_xaringan */
+.content-box-blue,
+.content-box-gray,
+.content-box-grey,
+.content-box-army,
+.content-box-green,
+.content-box-purple,
+.content-box-red,
+.content-box-yellow {
+  box-sizing: border-box;
+  border-radius: 15px;
+  margin: 0 0 15px;
+  overflow: hidden;
+  padding: 0px 20px 0px 20px;
+  width: 100%;
+}
 ```
 
 ```{r setup, include=FALSE}
@@ -322,7 +357,7 @@ class: inverse, center, middle
 
 La calidad de cada base secuenciada, en la escala **Phred**, se calcula de acuerdo la siguiente ecuación:
 
-.full-width[.content-box-blue[$$Q = -10 * log10(p)$$]]
+.full-width[.content-box-green[$$Q = -10 * log10(p)$$]]
 --
 
 Q = Calidad 
@@ -394,7 +429,7 @@ class: inverse, center, middle
 ## ¿Porqué es importante revisar los datos crudos?
 --
 
-.full-width[.content-box-blue[Para verificar la calidad de los datos (*QC: quality control*)]]
+.full-width[.content-box-yellow[Para verificar la calidad de los datos (*QC: quality control*)]]
 
 --
 
@@ -440,7 +475,6 @@ background-size: 90% 80%
 
 ### Pasos para correr FastQC:
 
-.scroll-output[
 
 1. Corre `FastQC`
 
@@ -455,7 +489,7 @@ fastqc ../data/*.fastq.gz -o ../Output/FastQC/
 #Busca los archivos generados por fastqc en el directorio de resultados
 ls ../Output/FastQC
 ```
-]
+
 
 ---
 
@@ -491,7 +525,7 @@ knitr::include_graphics("https://gwu-omics2019.readthedocs.io/en/latest/_images/
 ---
 
 ## MultiQC
-.scroll-output[
+
 [MultiQC](https://multiqc.info/) te permite juntar los archivos de salida para visualizarlos de forma óptima.
 
 1. Corre MultiQC
@@ -503,7 +537,7 @@ multiqc ../Output/FastQC/*.zip -o ../Output/MultiQC/
 
 2. Revisar los datos de salida creados por MultiQC
 
-]
+
 ---
 
 class: inverse, center, middle
@@ -511,6 +545,8 @@ class: inverse, center, middle
 # 6: Limpieza de las cuentas crudas
 
 ---
+## Limpieza
+
 
 En ocasiones las cuentas crudas presentan problemas de calidad en distintos niveles. Para RNAseq (expresión diferencial) prestar atención en:
 
@@ -534,6 +570,7 @@ class: center, middle
 background-image: url("./Images/hands_on.png")
 background-size: 90% 80%
 ---
+
 ## Limpieza
 
 .scroll-output[
@@ -859,19 +896,17 @@ colData(se)
 
 .scroll-output[
 - El slot **ColData** es un objeto con clase de *DataFrame*
-.code70[
-```{r, echo = T}
+
+```{r, echo = T, include = FALSE}
 class(colData(se))
 ```
-]
---
 
 - *Rownames* de **ColData** corresponden a los *Colnames* en el slot **Assay**- **.red[Importante para análisis con DESeq2]**
-.code70[
-```{r, echo = T}
+
+```{r, echo = T, include = FALSE}
 rownames(colData(se))
 ```
-]
+
 ]
 ---
 
@@ -956,7 +991,7 @@ row.names(colData(se)) == colnames(assay(se))
 ```
 
 
-```{r, echo = T}
+```{r, echo = T, include = F}
 ##Para obtener las cuentas a nivel de gen utiliza
 gse <- summarizeToGene(se)
 ```
@@ -1049,7 +1084,7 @@ knitr::include_graphics("./Images/Heatmap.png")
 
 --
 
-.content-box-red[Reducción de variables implica  preservar y captar la mayor información sobre los datos
+.blockquote[Reducción de variables implica  preservar y captar la mayor información sobre los datos
 ]
 
 ---
@@ -1079,7 +1114,7 @@ Busqueda de correlación entre las variables `r icons::fontawesome(name = "chevr
 ]
 
 --
-.content-box-red[Los componentes principales son los nuevos ejes que maximizan la distancia de los datos al origen
+.blockquote[Los componentes principales son los nuevos ejes que maximizan la distancia de los datos al origen
 ]
 
 ---
@@ -1436,9 +1471,9 @@ Así que **La dispersión es mayor para genes con poca abundancia y menor para g
 
 Y la **dispersión refleja la varianza**.
 
-.full-width[.content-box-red[
+.blockquote[
 `DESeq2` asume que los genes con similar expresión tienen similar dispersión
-]]
+]
 
 ---
 
@@ -1478,7 +1513,7 @@ dds  <- DESeq(dds)
 ```
 
 2. Para obtener los resultados del análisis de expresión diferencial usa la función `results`
-```{r}
+```{r, echo = T, eval = T}
 ##Usemos la función results con los parámetros por default
 res <- results(dds)
 
@@ -1501,8 +1536,8 @@ mcols(res, use.names = TRUE)
 
 .scroll-output[
 
-**_Warning_**
-Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:
+**_Warning_** 
+.content-box-red[Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:]
 
 *La expresión del Gen X en la condición problema es igual a la condición control*
 

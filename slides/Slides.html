@@ -4,7 +4,7 @@
     <title>Taller de análisis de datos de expresión diferencial</title>
     <meta charset="utf-8" />
     <meta name="author" content="Rodolfo LCD" />
-    <meta name="date" content="2021-10-14" />
+    <meta name="date" content="2021-10-16" />
     <script src="libs/header-attrs-2.11/header-attrs.js"></script>
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
@@ -18,7 +18,7 @@ class: center, middle, inverse, title-slide
 
 # Taller de análisis de datos de expresión diferencial
 ### Rodolfo LCD
-### 14 October 2021
+### 16 October 2021
 
 ---
 
@@ -61,6 +61,41 @@ pre {
   left: 50%;
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
+}
+
+/* From https://github.com/garthtarr/sydney_xaringan */
+blockquote, .blockquote {
+  display: block;
+  margin-top: 0.1em;
+  margin-bottom: 0.2em;
+  margin-left: 5px;
+  margin-right: 5px;
+  border-left: solid 10px #0148A4;
+  border-top: solid 2px #0148A4;
+  border-bottom: solid 2px #0148A4;
+  border-right: solid 2px #0148A4;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  /* background-color: #e64626; */
+  color: #e64626;
+  padding: 0.5em;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+/* From https://github.com/garthtarr/sydney_xaringan */
+.content-box-blue,
+.content-box-gray,
+.content-box-grey,
+.content-box-army,
+.content-box-green,
+.content-box-purple,
+.content-box-red,
+.content-box-yellow {
+  box-sizing: border-box;
+  border-radius: 15px;
+  margin: 0 0 15px;
+  overflow: hidden;
+  padding: 0px 20px 0px 20px;
+  width: 100%;
 }
 &lt;/style&gt;
 
@@ -281,7 +316,7 @@ class: inverse, center, middle
 
 La calidad de cada base secuenciada, en la escala **Phred**, se calcula de acuerdo la siguiente ecuación:
 
-.full-width[.content-box-blue[$$Q = -10 * log10(p)$$]]
+.full-width[.content-box-green[$$Q = -10 * log10(p)$$]]
 --
 
 Q = Calidad 
@@ -343,7 +378,7 @@ class: inverse, center, middle
 ## ¿Porqué es importante revisar los datos crudos?
 --
 
-.full-width[.content-box-blue[Para verificar la calidad de los datos (*QC: quality control*)]]
+.full-width[.content-box-yellow[Para verificar la calidad de los datos (*QC: quality control*)]]
 
 --
 
@@ -382,7 +417,6 @@ background-size: 90% 80%
 
 ### Pasos para correr FastQC:
 
-.scroll-output[
 
 1. Corre `FastQC`
 
@@ -399,7 +433,7 @@ fastqc ../data/*.fastq.gz -o ../Output/FastQC/
 #Busca los archivos generados por fastqc en el directorio de resultados
 ls ../Output/FastQC
 ```
-]
+
 
 ---
 
@@ -431,7 +465,7 @@ Los datos a continuación muestran lecturas de buena calidad (Verde = buena, ama
 ---
 
 ## MultiQC
-.scroll-output[
+
 [MultiQC](https://multiqc.info/) te permite juntar los archivos de salida para visualizarlos de forma óptima.
 
 1. Corre MultiQC
@@ -444,7 +478,7 @@ multiqc ../Output/FastQC/*.zip -o ../Output/MultiQC/
 
 2. Revisar los datos de salida creados por MultiQC
 
-]
+
 ---
 
 class: inverse, center, middle
@@ -452,6 +486,8 @@ class: inverse, center, middle
 # 6: Limpieza de las cuentas crudas
 
 ---
+## Limpieza
+
 
 En ocasiones las cuentas crudas presentan problemas de calidad en distintos niveles. Para RNAseq (expresión diferencial) prestar atención en:
 
@@ -462,7 +498,6 @@ En ocasiones las cuentas crudas presentan problemas de calidad en distintos nive
 &lt;svg viewBox="0 0 352 512" style="height:1em;position:relative;display:inline-block;top:.1em;fill:red;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"&gt;&lt;/path&gt;&lt;/svg&gt; Presencia de secuencias contaminantes (adaptadores)
 
 ---
-
 ## Herramientas
 
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
@@ -822,33 +857,13 @@ colData(se)
 
 .scroll-output[
 - El slot **ColData** es un objeto con clase de *DataFrame*
-.code70[
 
-```r
-class(colData(se))
-```
 
-```
-## [1] "DFrame"
-## attr(,"package")
-## [1] "S4Vectors"
-```
-]
---
 
 - *Rownames* de **ColData** corresponden a los *Colnames* en el slot **Assay**- **.red[Importante para análisis con DESeq2]**
-.code70[
 
-```r
-rownames(colData(se))
-```
 
-```
-##  [1] "siRNA_NRF2_1"    "siRNA_control_1" "siRNA_NRF2_2"    "siRNA_control_2"
-##  [5] "siRNA_NRF2_3"    "siRNA_control_3" "CT_1"            "mut_NRF2_1"     
-##  [9] "CT_2"            "mut_NRF2_2"      "CT_3"            "mut_NRF2_3"
-```
-]
+
 ]
 ---
 
@@ -1057,40 +1072,6 @@ row.names(colData(se)) == colnames(assay(se))
 
 
 
-```r
-##Para obtener las cuentas a nivel de gen utiliza
-gse &lt;- summarizeToGene(se)
-```
-
-```
-## Warning: DEPRECATION: As of BiocFileCache (&gt;1.15.1), default caching location has changed.
-##   Problematic cache: /Users/rodolfochavez/Library/Caches/BiocFileCache
-##   See https://www.bioconductor.org/packages/devel/bioc/vignettes/BiocFileCache/inst/doc/BiocFileCache.html#default-caching-location-update
-```
-
-```
-## loading existing EnsDb created: 2021-09-21 18:26:11
-```
-
-```
-## obtaining transcript-to-gene mapping from database
-```
-
-```
-## loading existing gene ranges created: 2021-09-21 18:26:50
-```
-
-```
-## summarizing abundance
-```
-
-```
-## summarizing counts
-```
-
-```
-## summarizing length
-```
 
 ]
 ]
@@ -1170,7 +1151,7 @@ class: inverse, center, middle
 
 --
 
-.content-box-red[Reducción de variables implica  preservar y captar la mayor información sobre los datos
+.blockquote[Reducción de variables implica  preservar y captar la mayor información sobre los datos
 ]
 
 ---
@@ -1196,7 +1177,7 @@ Busqueda de correlación entre las variables &lt;svg viewBox="0 0 320 512" style
 ]
 
 --
-.content-box-red[Los componentes principales son los nuevos ejes que maximizan la distancia de los datos al origen
+.blockquote[Los componentes principales son los nuevos ejes que maximizan la distancia de los datos al origen
 ]
 
 ---
@@ -1637,9 +1618,9 @@ Así que **La dispersión es mayor para genes con poca abundancia y menor para g
 
 Y la **dispersión refleja la varianza**.
 
-.full-width[.content-box-red[
+.blockquote[
 `DESeq2` asume que los genes con similar expresión tienen similar dispersión
-]]
+]
 
 ---
 
@@ -1701,6 +1682,14 @@ dds  &lt;- DESeq(dds)
 
 2. Para obtener los resultados del análisis de expresión diferencial usa la función `results`
 
+```r
+##Usemos la función results con los parámetros por default
+res &lt;- results(dds)
+
+##Visualiza el objeto que contiene los resultados
+res
+```
+
 ```
 ## log2 fold change (MLE): Treatment siRNA NRF2 vs siRNA control 
 ## Wald test p-value: Treatment siRNA NRF2 vs siRNA control 
@@ -1731,6 +1720,11 @@ dds  &lt;- DESeq(dds)
 ## ENSG00000288695    0.768387
 ## ENSG00000288698    0.795601
 ## ENSG00000288699          NA
+```
+
+```r
+##Obten el número de genes sobre- y sub-expresados de acuerdo a la prueba estadística
+summary(res)
 ```
 
 ```
@@ -1771,8 +1765,8 @@ mcols(res, use.names = TRUE)
 
 .scroll-output[
 
-**_Warning_**
-Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:
+**_Warning_** 
+.content-box-red[Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:]
 
 *La expresión del Gen X en la condición problema es igual a la condición control*
 
