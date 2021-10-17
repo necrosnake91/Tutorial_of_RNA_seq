@@ -3,7 +3,7 @@ title: "Expresión diferencial"
 author: "Rodolfo Chávez"
 date: "`r Sys.Date()`"
 knit: (function(inputFile, encoding) { 
-      out_dir <- "../";
+      out_dir <- "./";
       rmarkdown::render(inputFile,
                         encoding=encoding, 
                         output_file=file.path(dirname(inputFile), out_dir, 'Differential_expression_analysis_tutorial')) })
@@ -123,7 +123,7 @@ Corriendo el comando:
 conda install -c  bioconda <paquete>
 ```
 
-### R
+### `r icons::icon_style(icons::fontawesome("r-project"), fill = "#1A44A4")` R
 
 Los paquetes de R que vas a emplear en la práctica se descargarán desde los repositiorios de **[Bioconductor]()** y **CRAN**. Para ello asegurate que tienes instalada la **última versión** de **[R](https://cran.itam.mx/)** y la IDE de **[RStudio](https://www.rstudio.com/products/rstudio/download/)**. 
 Una vez configurado correctamente R, procede a instalar la **última versión** de Bioconductor corriendo el siguiente comando:
