@@ -69,7 +69,7 @@ This folder stores the results derived from:
 * Salmon_quants
 
 ### `slides`
-This folder contains the Rmd and html files for the slides and the cheatsheet. Follow this [link]() to visualize the Slides
+This folder contains the Rmd and html files for the slides and the cheatsheet. Follow this [link](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/slides/Slides.html#1) to visualize the Slides. The cheatsheet is ubicated [here](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/slides/Differential_expression_analysis_tutorial.html).
 
 ### `reference`
 The reference transcriptome downloaded from the [GENECODE](https://www.gencodegenes.org/human/) site is stored here in `fasta` format.
