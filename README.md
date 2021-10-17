@@ -7,22 +7,31 @@ Welcome to this GitHub repository. This repository was designed to provide you a
 
 ## Required packages
 
-Before running the analysis, please install the following R packages:
+Before running the analysis, please install the following R packages from CRAN:
 
-* __tidyverse__
-* __pheatmap__
-* __edgeR__ ```BiocManager::install("edgeR")```
-* __DESeq2__ ```BiocManager::install("DESeq2")```
-* __PCAtools__ ```BiocManager::install("PCAtools")```
-* __marray__ ```BiocManager::install("marray")```
+* tidyverse
+* RColorBrewer
+* pheatmap
+* here
 
-Make sure that you have installed the last version of BioConductor. If not, run the next lines on R:
+Also, make sure that you have installed the last version of BioConductor. If not, run the next lines on R:
 
 ```
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(version = "3.12")
+BiocManager::install(version = "3.13")
 ```
+and install:
+
+* tximeta
+* DESeq2
+* PCAtools
+* apeglm
+* Glimma
+* clusterProfiler
+* enrichplot
+* biomaRt
+* fgsea
 
 ## Folder content
 
@@ -31,18 +40,38 @@ This is the distribution of folders and files in this repository:
 ```
 +-- Tutorial for Differential Expression analysis
 |		+--bin/
-|		+--results/
+|		+--data/
+|		+--Output/
+|		+--slides/
+|		+--reference/
 ```
-### ```bin/```
+### `bin/`
 This folder stores the required scripts to run the DE analysis in R:
 
-* ```Differential_expression_analysis.R``` Script for performing DE analysis using edgeR package.
-*  ```functions.R``` This script contains some functions to recodificate the results (edgeR or DESeq2) of DE genes into a dataframe and to create volcano plots.
+`1. QC_analysis`. Script to perform quality control of raw reads using **FastQC** and **MultiQC**.
 
-### ```results/```
-This folder will store all the plots, in .png format, created by running 
-[```Differential_expression_analysis.R```](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/bin/Differential_expression_analysis.R) script. Also, the count matrix ```counts.txt``` is stored in this folder.
+`2. Read_cleaning`. Script for clean the reads and remove the Iluminna universal adapter sequence from raw reads using **Cutadapt**.
 
-Additionally, you will find ```Differential_expression_analysis_tutorial.html``` file which contains the presentation.
+`3. Pseudoalignment`. This script contains the code for performing pseudoalignment and abundance estimation using **Salmon**
+
+`4. Differential_expression_analysis.R`. This script performs differential expression testing using the algorithm of **DESeq2**.
+
+`functions.R`. Script containing useful functions.
+
+### `data`
+Folder for storing the raw counts in `fastq.gz` format. After getting the raw counts, please copy them in this folder
+
+### `Output`
+This folder stores the results derived from:
+
+* FastQC
+* MultiQC
+* Salmon_quants
+
+### `slides`
+This folder contains the Rmd and html files for the slides and the cheatsheet. Follow this [link]() to visualize the Slides
+
+### `reference`
+The reference transcriptome downloaded from the [GENECODE](https://www.gencodegenes.org/human/) site is stored here in `fasta` format.
 
 I suggest you take a read to the user's manual for each package in order to find useful information to perform DE analysis on your data. 
