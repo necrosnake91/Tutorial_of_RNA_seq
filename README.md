@@ -2,7 +2,7 @@
 
 Hello everyone! 
 
-Welcome to this GitHub repository. This repository was designed to provide you a wide view for the Differential Expression (DE) analysis using bioconductor packages **[edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html)** and **[DESeq2](http://bioconductor.org/packages/release/bioc/html/DESeq2.html)**.
+Welcome to this GitHub repository. This repository was designed to provide you a wide view for the Differential Expression (DE) analysis using the bioconductor package **[DESeq2](http://bioconductor.org/packages/release/bioc/html/DESeq2.html)**.
 
 
 ## Required packages
@@ -69,7 +69,7 @@ This folder stores the results derived from:
 * Salmon_quants
 
 ### `slides`
-This folder contains the Rmd and html files for the slides and the cheatsheet. Follow this [link](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/slides/Slides.html#1) to visualize the Slides. The cheatsheet is ubicated [here](https://github.com/necrosnake91/Tutorial_of_RNA_seq/blob/main/slides/Differential_expression_analysis_tutorial.html).
+This folder contains the Rmd and html files for the slides and the cheatsheet. Follow this [link](https://necrosnake91.github.io/Tutorial_of_RNA_seq/slides/Slides.html#1) to visualize the Slides. The cheatsheet is ubicated [here](https://necrosnake91.github.io/Tutorial_of_RNA_seq/slides/Differential_expression_analysis_tutorial.html).
 
 ### `reference`
 The reference transcriptome downloaded from the [GENECODE](https://www.gencodegenes.org/human/) site is stored here in `fasta` format.
