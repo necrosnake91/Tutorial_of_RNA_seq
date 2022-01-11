@@ -4,7 +4,7 @@
     <title>Taller de análisis de datos de expresión diferencial</title>
     <meta charset="utf-8" />
     <meta name="author" content="Rodolfo LCD" />
-    <meta name="date" content="2021-10-16" />
+    <meta name="date" content="2022-01-10" />
     <script src="libs/header-attrs-2.11/header-attrs.js"></script>
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
@@ -18,7 +18,7 @@ class: center, middle, inverse, title-slide
 
 # Taller de análisis de datos de expresión diferencial
 ### Rodolfo LCD
-### 16 October 2021
+### 10 January 2022
 
 ---
 
@@ -498,6 +498,7 @@ En ocasiones las cuentas crudas presentan problemas de calidad en distintos nive
 &lt;svg viewBox="0 0 352 512" style="height:1em;position:relative;display:inline-block;top:.1em;fill:red;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"&gt;&lt;/path&gt;&lt;/svg&gt; Presencia de secuencias contaminantes (adaptadores)
 
 ---
+
 ## Herramientas
 
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
@@ -1763,15 +1764,18 @@ mcols(res, use.names = TRUE)
 
 ## Análisis de expresión diferencial
 
-.scroll-output[
 
 **_Warning_** 
+
 .content-box-red[Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:]
 
-*La expresión del Gen X en la condición problema es igual a la condición control*
+.blockquote[La expresión del Gen X en la condición problema es igual a la condición control]
 
 Si deseamos modificar el *cutoff* o valor de corte del log2FoldChange:
 
+---
+
+.scroll-output[
 
 ```r
 ##Emplea los argumentos lfcthreshold y alpha para especificar ambos puntos de corte de forma simultánea
@@ -1830,8 +1834,8 @@ summary(res_LFC)
 ```
 
 **NUNCA** realices la prueba de expresión diferencial con un valor de corte X (log2FoldChange) y posteriormente filtres los genes diferencialmente expresados empleando otro valor de log2FoldChange.
-]
 
+]
 ---
 class: inverse, center, middle
 
@@ -2111,7 +2115,7 @@ ego_up &lt;- enricher(gene = up$entrezgene_id, ##Vector con los nombres o id de 
 
 Visualización de los resultados:
 
-Las librerías `clusterProfiler()` y `enrichplot()` cuentan con una variedad de funciones para visualizar los resultados:
+Las librerías **clusterProfiler** y **enrichplot** cuentan con una variedad de funciones para visualizar los resultados:
 
 .pull-left[
 
