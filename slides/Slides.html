@@ -4,7 +4,7 @@
     <title>Taller de análisis de datos de expresión diferencial</title>
     <meta charset="utf-8" />
     <meta name="author" content="Rodolfo LCD" />
-    <meta name="date" content="2022-01-10" />
+    <meta name="date" content="2022-01-12" />
     <script src="libs/header-attrs-2.11/header-attrs.js"></script>
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
@@ -18,7 +18,7 @@ class: center, middle, inverse, title-slide
 
 # Taller de análisis de datos de expresión diferencial
 ### Rodolfo LCD
-### 10 January 2022
+### 12 January 2022
 
 ---
 
@@ -423,7 +423,7 @@ background-size: 90% 80%
 
 ```bash
 ##La opción -o es para elegir el directorio de salida
-fastqc ../data/*.fastq.gz -o ../Output/FastQC/
+fastqc ../data/fastq_files/*.fastq.gz -o ../results/fastqc_output/
 ```
 
 2. Revisa los archivos generados
@@ -431,7 +431,7 @@ fastqc ../data/*.fastq.gz -o ../Output/FastQC/
 
 ```bash
 #Busca los archivos generados por fastqc en el directorio de resultados
-ls ../Output/FastQC
+ls ../results/fastqc_output/
 ```
 
 
@@ -473,7 +473,7 @@ Los datos a continuación muestran lecturas de buena calidad (Verde = buena, ama
 
 ```bash
 ##Nuevamente, la opción -o es para especificar la ruta donde se almacenarán los archivos de salida
-multiqc ../Output/FastQC/*.zip -o ../Output/MultiQC/
+multiqc ../results/fastqc_output/*.zip -o ../results/multiqc_output/
 ```
 
 2. Revisar los datos de salida creados por MultiQC
@@ -501,11 +501,14 @@ En ocasiones las cuentas crudas presentan problemas de calidad en distintos nive
 
 ## Herramientas
 
-- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 
-- [Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
+[Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
 
-- [Cutadapt](https://cutadapt.readthedocs.io/en/stable/)
+[Cutadapt](https://cutadapt.readthedocs.io/en/stable/)
+
+&lt;img src="https://opengraph.githubassets.com/d6f994ba68f73178590c7190044d7464f57254b4677bb2ba1b184a561f3a23c7/timflutre/trimmomatic" style="display: block; margin: auto;" /&gt;
+
 
 --- 
 class: center, middle
@@ -720,7 +723,7 @@ Para ello requerímos de una tabla de metadatos con información de las muestras
 ```bash
 
 #La tabla se ubica en el directorio de salmon_quants con el nombre de metadata.txt
-ls ../salmon_quants
+ls ../data/salmon_quants
 ```
 
 ```
@@ -754,11 +757,11 @@ ación de cada muestra
 
 ```r
 ##Lee la tabla de metadatos en R
-coldata &lt;- read.table(here("salmon_quants/metadata.txt"), he = T, stringsAsFactors = T, sep = "\t")
+coldata &lt;- read.table(here("results/salmon_quants/metadata.txt"), he = T, stringsAsFactors = T, sep = "\t")
 ##Nombra las filas de la tabla empleando la columna de los id únicos
 rownames(coldata) &lt;- coldata$unique_id
 ##Crea una nueva columna que contenga la ruta hacia los archivos quant.sf
-coldata &lt;- dplyr::mutate(coldata, files = file.path(here("salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf"))
+coldata &lt;- dplyr::mutate(coldata, files = file.path(here("results/salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf"))
 ##Genera una columna para verificar que las rutas hacia los archivos quant.sf fueron creadas correctamente
 coldata &lt;- mutate(coldata, file_exist = file.exists(coldata$files))
 ##Asigna una columna llamada names que contenga el nombre de los directorios de cada muestra
@@ -1327,7 +1330,7 @@ pca &lt;- pca(assay(rld), metadata = colData(rld), scale = T)
 biplot(pca, lab = rownames(colData(rld)), colby = "Treatment")
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-79-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-80-1.png)&lt;!-- --&gt;
 
 ]
 
@@ -1501,7 +1504,7 @@ Se puede normalizar considerando:
 
 Puedes realizar otras transformaciones en `DESeq2` para estabilizar la varianza a través de los differentes valores promedio de expresión.  
 
-![](Slides_files/figure-html/unnamed-chunk-90-1.png)&lt;!-- --&gt;![](Slides_files/figure-html/unnamed-chunk-90-2.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-91-1.png)&lt;!-- --&gt;![](Slides_files/figure-html/unnamed-chunk-91-2.png)&lt;!-- --&gt;
 
 
 
@@ -1602,7 +1605,7 @@ ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation)  
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-91-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-92-1.png)&lt;!-- --&gt;
 
 
 ]
@@ -1892,7 +1895,7 @@ Para generar el **MAplot** usa:
 plotMA(res)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-102-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-103-1.png)&lt;!-- --&gt;
 ]
 ]
 
@@ -1943,7 +1946,7 @@ summary(res_shrink)
 plotMA(res_shrink,  ylim = c(-3, 3))
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-103-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-104-1.png)&lt;!-- --&gt;
 ]
 
 ---
@@ -1964,7 +1967,7 @@ res_shrink &lt;- as.data.frame(res_shrink)
 volcanoplotR(res_shrink, logfc = 0, p.adj = 0.1)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-104-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-105-1.png)&lt;!-- --&gt;
 ]
 
 ---
@@ -2030,7 +2033,7 @@ pheatmap(norm_counts[rownames(deg), 1:6], ##Corta los genes con expresión difer
          annotation_col = coldata[1:6, c(2, 6)]) ##Añadir información relacionada a las columnas)
 ```
 
-&lt;img src="Slides_files/figure-html/unnamed-chunk-107-1.png" style="display: block; margin: auto;" /&gt;
+&lt;img src="Slides_files/figure-html/unnamed-chunk-108-1.png" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
@@ -2127,7 +2130,7 @@ No aglomerativos
 dotplot(ego_up, showCategory = 10)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-112-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-113-1.png)&lt;!-- --&gt;
 
 **Barplot**:
 
@@ -2135,7 +2138,7 @@ dotplot(ego_up, showCategory = 10)
 barplot(ego_up, showCategory = 10)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-113-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-114-1.png)&lt;!-- --&gt;
 
 ]
 
@@ -2150,7 +2153,7 @@ Aglomerativos
 emapplot(ego_up, showCategory = 10)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-115-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-116-1.png)&lt;!-- --&gt;
 
 **Treeplot**
 
@@ -2171,7 +2174,7 @@ treeplot(ego_up)
 ## use `guide = "none"` instead.
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-116-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-117-1.png)&lt;!-- --&gt;
 
 ]
 
@@ -2309,7 +2312,7 @@ GSEA_res &lt;- as.tibble(GSEA_res) %&gt;%
 barplot_GSEA(GSEA_res,  Head = 20, Tail = 20)
 ```
 
-![](Slides_files/figure-html/unnamed-chunk-123-1.png)&lt;!-- --&gt;
+![](Slides_files/figure-html/unnamed-chunk-124-1.png)&lt;!-- --&gt;
 ]
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>

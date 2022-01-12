@@ -480,14 +480,14 @@ background-size: 90% 80%
 
 ```{bash echo=TRUE, eval=FALSE}
 ##La opción -o es para elegir el directorio de salida
-fastqc ../data/*.fastq.gz -o ../Output/FastQC/
+fastqc ../data/fastq_files/*.fastq.gz -o ../results/fastqc_output/
 ```
 
 2. Revisa los archivos generados
 
 ```{bash echo=TRUE, eval = F}
 #Busca los archivos generados por fastqc en el directorio de resultados
-ls ../Output/FastQC
+ls ../results/fastqc_output/
 ```
 
 
@@ -532,7 +532,7 @@ knitr::include_graphics("https://gwu-omics2019.readthedocs.io/en/latest/_images/
 
 ```{bash multiqc, echo=TRUE, eval=FALSE}
 ##Nuevamente, la opción -o es para especificar la ruta donde se almacenarán los archivos de salida
-multiqc ../Output/FastQC/*.zip -o ../Output/MultiQC/
+multiqc ../results/fastqc_output/*.zip -o ../results/multiqc_output/
 ```
 
 2. Revisar los datos de salida creados por MultiQC
@@ -557,13 +557,19 @@ En ocasiones las cuentas crudas presentan problemas de calidad en distintos nive
 `r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` Presencia de secuencias contaminantes (adaptadores)
 
 ---
+
 ## Herramientas
 
-- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 
-- [Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
+[Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
 
-- [Cutadapt](https://cutadapt.readthedocs.io/en/stable/)
+[Cutadapt](https://cutadapt.readthedocs.io/en/stable/)
+
+```{r, echo=FALSE, eval=T, fig.align='center'}
+knitr::include_graphics("https://opengraph.githubassets.com/d6f994ba68f73178590c7190044d7464f57254b4677bb2ba1b184a561f3a23c7/timflutre/trimmomatic")
+```
+
 
 --- 
 class: center, middle
@@ -811,7 +817,7 @@ Para ello requerímos de una tabla de metadatos con información de las muestras
 ```{bash, echo = T, eval =T}
 
 #La tabla se ubica en el directorio de salmon_quants con el nombre de metadata.txt
-ls ../salmon_quants
+ls ../data/salmon_quants
 ```
 
 ---
@@ -828,11 +834,11 @@ ación de cada muestra
 
 ```{r, echo=TRUE, eval = T}
 ##Lee la tabla de metadatos en R
-coldata <- read.table(here("salmon_quants/metadata.txt"), he = T, stringsAsFactors = T, sep = "\t")
+coldata <- read.table(here("results/salmon_quants/metadata.txt"), he = T, stringsAsFactors = T, sep = "\t")
 ##Nombra las filas de la tabla empleando la columna de los id únicos
 rownames(coldata) <- coldata$unique_id
 ##Crea una nueva columna que contenga la ruta hacia los archivos quant.sf
-coldata <- dplyr::mutate(coldata, files = file.path(here("salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf"))
+coldata <- dplyr::mutate(coldata, files = file.path(here("results/salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf"))
 ##Genera una columna para verificar que las rutas hacia los archivos quant.sf fueron creadas correctamente
 coldata <- mutate(coldata, file_exist = file.exists(coldata$files))
 ##Asigna una columna llamada names que contenga el nombre de los directorios de cada muestra
@@ -1534,15 +1540,18 @@ mcols(res, use.names = TRUE)
 
 ## Análisis de expresión diferencial
 
-.scroll-output[
 
 **_Warning_** 
+
 .content-box-red[Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:]
 
-*La expresión del Gen X en la condición problema es igual a la condición control*
+.blockquote[La expresión del Gen X en la condición problema es igual a la condición control]
 
 Si deseamos modificar el *cutoff* o valor de corte del log2FoldChange:
 
+---
+
+.scroll-output[
 ```{r,  echo = T, eval = T}
 ##Emplea los argumentos lfcthreshold y alpha para especificar ambos puntos de corte de forma simultánea
 res_LFC <- results(dds, lfcThreshold = 1, alpha = 0.05)
@@ -1553,8 +1562,8 @@ summary(res_LFC)
 ```
 
 **NUNCA** realices la prueba de expresión diferencial con un valor de corte X (log2FoldChange) y posteriormente filtres los genes diferencialmente expresados empleando otro valor de log2FoldChange.
-]
 
+]
 ---
 class: inverse, center, middle
 
@@ -1790,7 +1799,7 @@ ego_up <- enricher(gene = up$entrezgene_id, ##Vector con los nombres o id de los
 
 Visualización de los resultados:
 
-Las librerías `clusterProfiler()` y `enrichplot()` cuentan con una variedad de funciones para visualizar los resultados:
+Las librerías **clusterProfiler** y **enrichplot** cuentan con una variedad de funciones para visualizar los resultados:
 
 .pull-left[
 
