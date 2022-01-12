@@ -18,9 +18,9 @@ library(fgsea)
 source("functions.R")
 #--------------------------------------Data importation--------------------------------
 ##Read the metadata file
-coldata <- read.table("../salmon_quants/metadata.txt", he = T, sep = "\t", stringsAsFactors = T)
+coldata <- read.table("../results/salmon_quants/metadata.txt", he = T, sep = "\t", stringsAsFactors = T)
 ##Add the path to quant files
-coldata <- mutate(coldata, files = file.path(here("salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf")) 
+coldata <- mutate(coldata, files = file.path(here("results/salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf")) 
 ##Check if path to quant files is ok
 coldata <- mutate(coldata, exist = file.exists(coldata$files))
 ##Create a new column consisting of key values  plus _quant
