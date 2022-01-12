@@ -4,11 +4,11 @@
 ##########################################################################
 
 ##Create directories to store output files
-mkdir -p ../fastqc_output
-mkdir -p ../multiquc_output
+mkdir -p ../results/fastqc_output
+mkdir -p ../results/multiquc_output
 
 ##Run fastqc
-fastqc ../data/fastq_files/*.fastq.gz -o ../fastqc_output
+fastqc ../data/fastq_files/*.fastq.gz -o ../results/fastqc_output
 
 ##Run multiqc
-multiqc ../fastqc_output/*.zip -o ../multiquc_output
+multiqc ../results/fastqc_output/*.zip -o ../results/multiquc_output
