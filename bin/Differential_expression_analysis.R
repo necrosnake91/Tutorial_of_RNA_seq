@@ -50,19 +50,23 @@ pca <- pca(mat = assay(rld), metadata = colData(rld), scale = T) ##Create a PCA 
 biplot(pca, lab = rownames(colData(rld)), colby = "Treatment") ##Get the biplot of the two main components
 ##Visualize the data using  an interactive MDS plot
 glimmaMDS(dds)
+##If necessary, batch effects must be reduced by aggregating a new column in coldata, called as batch. You can use the run ID or date of run
+##for each sample. Then, when creating the dds object use: DESeqDataSet(se = gse, design = ~ batch + Treatment)
 #-------------------------------------Differential expression analysis---------------------------------
 ##Run the DESeq function to normalize counts and adjust the data to the negative bi-nomial model
 dds <- DESeq(dds)
 ##Get the results from the differential expression analysis
-res <- results(dds) ##As default, we are testing for genes showing |lfc| > 0 and padj < 0.1
+res <- results(dds, lfcThreshold = 1, alpha = 0.05) ##As default, we are testing for genes showing |lfc| > 0 and padj < 0.1
 summary(res)
 res <- as.data.frame(res)
-volcanoplotR(res, logfc = 0, p.adj = 0.1)
+volcanoplotR(res, logfc = 1, p.adj = 0.05)
 ##Compare the results from siRNA_NRF2 vs siRNA_control treatment
 res_sirna <- results(dds, lfcThreshold = 0, alpha = 0.01)
 summary(res_sirna)
 ##Visualize the data using a MA-plot
+tiff("../results/Maplot.tiff", res = 300, height = 8, width = 10, units = "in")
 plotMA(res_sirna)
+dev.off()
 ##Shrunk the logFC for genes with low counts
 resultsNames(dds)
 res_shrink <- lfcShrink(dds, res = res_sirna, coef = "Treatment_siRNA_NRF2_vs_siRNA_control", type = "apeglm")
@@ -79,7 +83,7 @@ norm_counts <- counts(dds, normalized = T)
 ##Obtain the annotation for the columns of the heatmap
 annotation_col <- data.frame(coldata[1:6, c(2, 4)])
 ##Select a nice palette
-RdBlu <- brewer.pal(n= 10, name = "RdBu")
+RdBlu <- rev(brewer.pal(n= 10, name = "RdBu"))
 pheatmap(norm_counts[rownames(deg), 1:6], scale = "row", 
          border_color = NA, show_rownames = F, clustering_distance_rows = "euclidean",  
          clustering_distance_cols = "euclidean", clustering_method = "single", show_colnames = F, 
@@ -93,7 +97,7 @@ ensembl <- useMart("ensembl")
 ensembl <- useDataset("hsapiens_gene_ensembl", mart = ensembl)
 ##Get the list of up- and down regulated genes differentially expressed
 up_DEG  <- dplyr::filter(deg, log2FoldChange > 0) %>% rownames_to_column(var = "ensembl_gene_id")
-down_DEG <- filter(deg, log2FoldChange < 0) %>% rownames_to_column(var = "ensembl_gene_id")
+down_DEG <- dplyr::filter(deg, log2FoldChange < 0) %>% rownames_to_column(var = "ensembl_gene_id")
 ##Covert the ids
 up_DEG <- id_converter(mart = ensembl, ##Object with ensembl db information
             input = up_DEG, 
@@ -104,7 +108,7 @@ down_DEG <- id_converter(mart = ensembl,
                          attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), 
                          filter = "ensembl_gene_id")
 ##Read the gmt files for GOBP database
-go <- read.gmt("../data/c5.go.bp.v7.4.entrez.gmt")
+go <- read.gmt("../data/c5.go.bp.v7.5.1.entrez.gmt")
 ##Perform ORA
 ego_up <- enricher(gene = up_DEG$entrezgene_id, ##Select he column of entrez gene ids from the converted list
                    TERM2GENE = go, ##This is the background information. In this case use the GO db
@@ -115,8 +119,8 @@ ego_down <- enricher(gene = down_DEG$entrezgene_id,
                      pAdjustMethod = "BH", 
                      pvalueCutoff = 0.05)
 ##Visualize the results
-dotplot(ego_up)
-barplot(ego_up)
+dotplot(ego_up, showCategory = 15)
+barplot(ego_up, showCategory = 15)
 ego_up <- pairwise_termsim(ego_up)
 treeplot(ego_up)
 #-------------------------------------GSEA---------------------------------
@@ -128,14 +132,14 @@ res_shrink <- id_converter(mart = ensembl,
                            attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), 
                            filter = "ensembl_gene_id")
 ##Calculate the metric to rank the genes. Metric = -log10(padj)*log2FoldChange
-res_shrink <- drop_na(res_shrink) %>%##Eliminate NA values
-  mutate(stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange) %>%
-  dplyr::arrange(desc(stat)) ##Sort the data frame respect to the stat metric
+res_shrink <- drop_na(res_shrink) ##Eliminate NA values
+res_shrink <- mutate(res_shrink, stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange) ##Eliminate NA values
+res_shrink <- arrange(res_shrink, desc(stat)) ##Sort the data frame respect to the stat metric
 ##For GSEA input create a named vector using the stat value
 gsea_list <- res_shrink$stat
 names(gsea_list) <- res_shrink$entrezgene_id ##Name the elements using the entrezgene id
 ##Load the database again
-go <- gmtPathways("../data/c5.go.bp.v7.4.entrez.gmt")
+go <- gmtPathways("../data/c5.go.bp.v7.5.1.entrez.gmt")
 ##Perform GSEA
 GSEA_res <- fgseaMultilevel(go, 
                             gsea_list, 
