@@ -132,9 +132,9 @@ res_shrink <- id_converter(mart = ensembl,
                            attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol", "gene_biotype"), 
                            filter = "ensembl_gene_id")
 ##Calculate the metric to rank the genes. Metric = -log10(padj)*log2FoldChange
-res_shrink <- drop_na(res_shrink) ##Eliminate NA values
-res_shrink <- mutate(res_shrink, stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange) ##Eliminate NA values
-res_shrink <- arrange(res_shrink, desc(stat)) ##Sort the data frame respect to the stat metric
+res_shrink <- mutate(res_shrink, stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange) %>%
+  arrange(desc(stat)) %>% ##Sort the data frame respect to the stat metric
+  drop_na() ##Eliminate NA values
 ##For GSEA input create a named vector using the stat value
 gsea_list <- res_shrink$stat
 names(gsea_list) <- res_shrink$entrezgene_id ##Name the elements using the entrezgene id
