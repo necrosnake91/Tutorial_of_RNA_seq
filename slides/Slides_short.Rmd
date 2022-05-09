@@ -1,6 +1,6 @@
 ---
 title: 'Taller de análisis de datos de expresión diferencial'
-author: "Rodolfo LCD"
+author: "Rodolfo L. Chavez Dominguez"
 date: "`r BiocStyle::doc_date()`"
 output:
   xaringan::moon_reader:
@@ -147,9 +147,9 @@ knitr::include_graphics("./Images/transcriptomica.png")
 ## RNA-seq
 
 
-```{r, out.width = "660px",fig.align='center'}
-knitr::include_graphics("./Images/RNA_isolation.jpeg")
-```
+<img src="./Images/RNA_isolation.jpeg" width="500px" class="center">
+</img>
+
 
 ---
 
@@ -231,9 +231,6 @@ knitr::include_graphics("./Images/step3.png")
 ```{r, out.width = "550px",fig.align='center'}
 knitr::include_graphics("./Images/RNAseq_workflow.png")
 ```
-
----
-
 
 ---
 class: inverse, center, middle
@@ -733,26 +730,26 @@ background-size: 90% 80%
 
 .scroll-output[
 
-1. Crear un objeto `DESeq` (*SummarizedExperiment*) a partir del objeto `gse`
+Crear un objeto `DESeq` (*SummarizedExperiment*) a partir del objeto `gse`
 ```{r, echo = T, eval = T}
 dds <- DESeqDataSet(se = gse, ##Objeto SummarizedExperiment que contiene la matriz de cuentas crudas
                     design = ~ Treatment) ##Variable con los grupos experimentales a contrastar. Forma parte de las columnas de coldata
 ```
 
-2. Visualizar el grupo de referencia o **control** de la variable seleccionada
+Visualizar el grupo de referencia o **control** de la variable seleccionada
 ```{r, echo = T, eval = T}
 ##El  primer nivel o elemento es el grupo control  ("CT")
 levels(dds$Treatment)
 ```
 
-3. Dependiendo de la pregunta a responder, recodifica el  grupo de referencia:
+Dependiendo de la pregunta a responder, recodifica el  grupo de referencia:
 ```{r, echo = T, eval = T}
 dds$Treatment <- relevel(dds$Treatment, "siRNA_control")
 
 levels(dds$Treatment)
 ```
 
-4. Ya que los genes que muestran bajo número de cuentas (abundancia) no nos interesan en el análisis, selecciona aquellos que muestran mayor abundancia usando un punto de corte
+Selecciona aquellos genes que muestran mayor abundancia usando un punto de corte
 ```{r, echo = T, eval = T}
 ##Recupera los genes que muestran más de 1 cuenta en al menos 3 muestras
 keep <- rowSums(counts(dds) >= 1) >=3
@@ -1104,7 +1101,9 @@ res_LFC
 summary(res_LFC)
 ```
 
-**NUNCA** realices la prueba de expresión diferencial con un valor de corte X (log2FoldChange) y posteriormente filtres los genes diferencialmente expresados empleando otro valor de log2FoldChange.
+.content-box-red[
+<strong>NUNCA</strong> realices la prueba de expresión diferencial con un valor de corte X (log2FoldChange) y posteriormente filtres los genes diferencialmente expresados empleando otro valor de log2FoldChange.
+]
 
 ]
 ---
