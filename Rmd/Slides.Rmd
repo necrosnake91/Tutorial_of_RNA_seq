@@ -1,0 +1,1945 @@
+---
+title: 'Taller de análisis de datos de expresión diferencial'
+author: "Rodolfo LCD"
+date: "`r BiocStyle::doc_date()`"
+output:
+  xaringan::moon_reader:
+    css: ["default", "default-fonts", "hygge", "xaringan-themer.css", "sydney-fonts.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      beforeInit: "macros.js"
+      navigation:
+        scroll: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r xaringan-themer, echo = F, include = F}
+library(xaringanthemer)
+style_mono_accent(base_color = "#23395b")
+```
+
+```{css, echo = F}
+/* From https://github.com/yihui/xaringan/issues/147  */
+.scroll-output {
+  height: 80%;
+  overflow-y: scroll;
+}
+/* https://stackoverflow.com/questions/50919104/horizontally-scrollable-output-on-xaringan-slides */
+pre {
+  max-width: 100%;
+  overflow-x: scroll;
+}
+
+.remark-slide-content {
+  font-size: 28px;
+  padding: 20px 80px 20px 80px;
+}
+.remark-code, .remark-inline-code {
+  background: #f0f0f0;
+}
+.remark-code {
+  font-size: 24px;
+}
+.huge .remark-code { /*Change made here*/
+  font-size: 200% !important;
+}
+.tiny .remark-code { /*Change made here*/
+  font-size: 80% !important;
+}
+
+.center2 {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+
+/* From https://github.com/garthtarr/sydney_xaringan */
+blockquote, .blockquote {
+  display: block;
+  margin-top: 0.1em;
+  margin-bottom: 0.2em;
+  margin-left: 5px;
+  margin-right: 5px;
+  border-left: solid 10px #0148A4;
+  border-top: solid 2px #0148A4;
+  border-bottom: solid 2px #0148A4;
+  border-right: solid 2px #0148A4;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  /* background-color: #e64626; */
+  color: #e64626;
+  padding: 0.5em;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+/* From https://github.com/garthtarr/sydney_xaringan */
+.content-box-blue,
+.content-box-gray,
+.content-box-grey,
+.content-box-army,
+.content-box-green,
+.content-box-purple,
+.content-box-red,
+.content-box-yellow {
+  box-sizing: border-box;
+  border-radius: 15px;
+  margin: 0 0 15px;
+  overflow: hidden;
+  padding: 0px 20px 0px 20px;
+  width: 100%;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo = F, include = F}
+source("../bin/functions.R")
+library(tidyverse)
+library(tximeta)
+library(here)
+library(DESeq2)
+library(vsn)
+library(apeglm)
+library(PCAtools)
+library(Glimma)
+library(RColorBrewer)
+library(pheatmap)
+library(clusterProfiler)
+library(biomaRt)
+library(enrichplot)
+library(fgsea)
+```
+
+
+## Material
+
+Este material está basado en el pipeline de [Michael Love](https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html) de Bioconductor.
+
+```{r, out.width = "300px",fig.align='center'}
+knitr::include_graphics("https://images.squarespace-cdn.com/content/v1/5423875be4b03f0c482a58c4/1532953317705-W6TYTE70KG5E6KQEZU1K/ke17ZwdGBToddI8pDm48kNVP8RwsgCc7XlHc2zPQeqdZw-zPPgdn4jUwVcJE1ZvWQUxwkmyExglNqGp0IvTJZUJFbgE-7XRK3dMEBRBhUpxA5wn4368HhrDKfvXqORu9oTEmTJkjlQ2gdQcVngofpWQcE5w-MKnvigIPwIMqpXs/Bioconductor.png")
+```
+
+---
+class: inverse, center, middle
+
+# 1: Introducción al RNA-seq
+
+---
+## Transcriptómica
+
+Estudio de la expresión genética
+
+- ¿Cuánto RNA hay?
+
+```{r, out.width = "900px",fig.align='center'}
+knitr::include_graphics("./Images/transcriptomica.png")
+```
+
+---
+## RNA-seq
+
+
+```{r, out.width = "660px",fig.align='center'}
+knitr::include_graphics("./Images/RNA_isolation.jpeg")
+```
+
+---
+
+## Aplicaciones
+
+```{r, out.width = "570px",fig.align='center'}
+knitr::include_graphics("./Images/book.png")
+```
+
+---
+
+## Bases de datos
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("./Images/book.png")
+```
+
+---
+
+class: inverse, center, middle
+
+# 2: Organización de un proyecto bioinformático
+
+---
+
+## Organización del proyecto
+
+```{r, out.width="400px", fig.align='center', echo=F}
+knitr::include_graphics("./Images/Repo.png")
+```
+
+
+Almacenar el proyecto en .blue[GitHub] `r icons::icon_style(icons::fontawesome("github"), fill = "blue")` para el control de versiones 
+
+---
+
+## Organización del proyecto  
+
+- La función del **README** es documentar el proyecto y que otros usuarios entiendan su contenido
+--
+
+- Los datos deben de almacenarse en un directorio especial (considerar espacio en disco):
+--
+
+- Considerar almacenar los datos en un repositorio como respaldo [OSF](https://osf.io/) `r icons::academicons("osf")`
+--
+
+- **El código es una de las partes más importantes del proyecto**
+
+---
+.scroll-output[
+## Organización del proyecto
+## Código
+
+- Enumerar los scripts de acuerdo al orden en que serán ejecutados
+
+```
++-- 1.QualityControl.sh
++-- 2.Trimming.sh
++-- 3.ReadAlignment.sh
++-- 4.DifferentialExpression.R
+```
+
+
+- Utilizar rutas relativas hacia los archivos *input*
+
+```
+fastqc ../Data/*.fastqc -o ../Results/
+```
+
+- Comentar el script `r icons::fontawesome(name = "chevron-right")` facilita que sea entendido por humanos
+
+```
+#Change the location of bam files
+mv ../Data/*.bam ../Results/
+```
+
+
+Consulta el paquete [`here`](https://github.com/jennybc/here_here) desarrollado por Jenny B.
+
+- ¡Mejorar el código! `r icons::fontawesome(name = "chevron-right")` *Less is more*
+]
+
+---
+
+.center[![cat](./Images/cat.png)]
+
+---
+## Organización del proyecto
+```{r, out.width="450px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/Proyecto.png")
+```
+
+---
+## Experimento
+
+Número de acceso GEO: GSE136011
+
+```{r, out.width="800px", fig.align='center', echo=F}
+knitr::include_graphics("./Images/NRF2.png")
+```
+
+---
+
+class: inverse, center, middle
+
+# 3: Flujo de trabajo para el análisis de RNA-seq
+---
+## Flujo general de trabajo
+
+
+```{r, out.width = "550px",fig.align='center'}
+knitr::include_graphics("./Images/RNAseq_workflow.png")
+```
+
+---
+
+## Control de calidad
+
+
+```{r, out.width = "540px",fig.align='center'}
+knitr::include_graphics("./Images/step1.png")
+```
+
+
+---
+
+## Alineamiento y cuantificación
+
+
+```{r, out.width = "950px",fig.align='center'}
+knitr::include_graphics("./Images/step2.png")
+```
+
+
+---
+
+## Expresión diferencial y análisis funcionales
+
+
+```{r, out.width = "750px",fig.align='center'}
+knitr::include_graphics("./Images/step3.png")
+```
+
+---
+
+## Flujo general de trabajo
+
+
+```{r, out.width = "550px",fig.align='center'}
+knitr::include_graphics("./Images/RNAseq_workflow.png")
+```
+
+---
+
+class: inverse, center, middle
+
+# 4: Tipos de archivos 
+
+---
+
+## FastQ
+
+--
+
+- Derivado del formato FASTA
+
+--
+
+- Id secuencia + **Calidad**
+
+--
+
+- Generalmente no está comprimido (.fastq) `r icons::fontawesome(name = "chevron-right")` comprimir (.fastq.gz)
+
+--
+
+- Comprende 4 líneas por secuencia:
+  * @ ID del read + información de la corrida
+  * Secuencia 
+  * Símbolo "+"
+  * Calidad (Escala **Phred** y código **ASCII**)
+  
+---
+
+## FastQ  
+## Identificador
+
+--
+
+- El identificador de la secuencia es la primera línea del archivo .fastq
+
+--
+
+- Plataformas de Illumina superiores a 1.8 contienen la siguiente información:
+
+--
+
+**@machneID:run number:flowCell ID:lane:tile:read:control number:index**
+
+---
+
+## FastQ
+## Calidad
+
+La calidad de cada base secuenciada, en la escala **Phred**, se calcula de acuerdo la siguiente ecuación:
+
+.full-width[.content-box-green[$$Q = -10 * log10(p)$$]]
+--
+
+Q = Calidad 
+
+--
+
+p = Probabilidad de que el *base call* sea incorrecto
+
+--
+
+Valores de **p** cercanos a cero `r icons::fontawesome(name = "chevron-right")` Alta calidad
+
+---
+## FastQ
+## Calidad
+
+```{r, out.width="700px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/Fastqc.png")
+```
+
+
+---
+## FastQ
+## Calidad
+
+--
+
+- La calidad se codifica en formato **[ASCII](https://www.ascii-code.com/)**
+
+--
+
+- Phred + 33 `r icons::fontawesome(name = "chevron-right")`  Plataformas de Illumina a partir de 1.8 (símbolos especiales + alfanuméricos)
+
+--
+
+- Phred + 64 `r icons::fontawesome(name = "chevron-right")` Plataformas de Illumina anteriores a 1.8
+
+---
+## FastQ
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/ASCII0.png")
+```
+
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/ASCII33.png")
+```
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/ASCII64.png")
+```
+
+---
+
+## FastQ
+
+
+```{r, out.width="700px", fig.align='center',echo = F}
+knitr::include_graphics("./Images/Fastq.png")
+```
+
+
+---
+class: inverse, center, middle
+
+# 5: Control de calidad de los datos
+---
+## ¿Porqué es importante revisar los datos crudos?
+--
+
+.full-width[.content-box-yellow[Para verificar la calidad de los datos (*QC: quality control*)]]
+
+--
+
+- Los datos influencian los análisis posteriores
+
+--
+
+.pull-left[
+```{r, out.width = "150px",fig.align='center'}
+knitr::include_graphics("https://miro.medium.com/max/470/1*DVLpt3zCNaqeZOGNpgME7Q.png")
+knitr::include_graphics("https://i.pinimg.com/originals/30/66/ac/3066ac69ae68ac200ace0ca8fe3882c3.jpg")
+```
+]
+
+.pull-right[
+
+```{r, out.width = "200px",fig.align='center'}
+knitr::include_graphics("https://memegenerator.net/img/instances/68955295.jpg")
+```
+
+]
+
+
+---
+
+## FastQC
+
+Usaremos el programa de [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc) para analizar la calidad de los datos.
+
+--
+
+Podemos usar la interfaz gráfica o la línea de comandos, en este caso usaremos la línea de comandos.
+
+```{r, out.width = "400px",fig.align='center'}
+knitr::include_graphics("https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc.png")
+```
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+
+### Pasos para correr FastQC:
+
+
+1. Corre `FastQC`
+
+```{bash echo=TRUE, eval=FALSE}
+##La opción -o es para elegir el directorio de salida
+fastqc ../data/fastq_files/*.fastq.gz -o ../results/fastqc_output/
+```
+
+2. Revisa los archivos generados
+
+```{bash echo=TRUE, eval = F}
+#Busca los archivos generados por fastqc en el directorio de resultados
+ls ../results/fastqc_output/
+```
+
+
+---
+
+## Buena calidad
+
+El eje x = longitud de la read, y =  calidad (phred score)
+
+Los datos a continuación muestran lecturas de buena calidad (Verde = buena, amarilla = aceptable, roja = baja). 
+
+```{r, out.width = "400px",fig.align='center'}
+knitr::include_graphics("https://gwu-omics2019.readthedocs.io/en/latest/_images/fastqc_good.png")
+```
+
+
+---
+
+## Mala calidad
+
+¿Hasta donde los datos son de buena calidad? ¿Estos datos los usarías?
+
+```{r, out.width = "550px",fig.align='center'}
+knitr::include_graphics("https://gwu-omics2019.readthedocs.io/en/latest/_images/fastqc_bad.png")
+```
+
+
+---
+
+## Ejercicio
+
+¿Cómo se ven nuestros datos? 
+
+
+---
+
+## MultiQC
+
+[MultiQC](https://multiqc.info/) te permite juntar los archivos de salida para visualizarlos de forma óptima.
+
+1. Corre MultiQC
+
+```{bash multiqc, echo=TRUE, eval=FALSE}
+##Nuevamente, la opción -o es para especificar la ruta donde se almacenarán los archivos de salida
+multiqc ../results/fastqc_output/*.zip -o ../results/multiqc_output/
+```
+
+2. Revisar los datos de salida creados por MultiQC
+
+
+---
+
+class: inverse, center, middle
+
+# 6: Limpieza de las cuentas crudas
+
+---
+## Limpieza
+
+
+En ocasiones las cuentas crudas presentan problemas de calidad en distintos niveles. Para RNAseq (expresión diferencial) prestar atención en:
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` Distribución de la calidad a lo largo de las secuencias
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` Contaminación específica e inespecífica (% GC)
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` Presencia de secuencias contaminantes (adaptadores)
+
+---
+
+## Herramientas
+
+[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+
+[Trimgalore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
+
+[Cutadapt](https://cutadapt.readthedocs.io/en/stable/)
+
+```{r, echo=FALSE, eval=T, fig.align='center'}
+knitr::include_graphics("https://opengraph.githubassets.com/d6f994ba68f73178590c7190044d7464f57254b4677bb2ba1b184a561f3a23c7/timflutre/trimmomatic")
+```
+
+
+--- 
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+
+## Limpieza
+
+.scroll-output[
+Para remover secuencias de los adaptadores de las lecturas:
+
+1. Ejecuta `cutadapt` para una sola muestra:
+```{bash, echo = T, eval = F}
+cutadapt -a AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT ##Para el read forward
+-A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT ##Para el read reverse
+-o ../Output/Cutadapt/samp1_clean_R1.fastq.gz ##Archivo de salida para las lecturas forward
+-p ../Output/Cutadapt/samp1_clean_R2.fastq.gz ##Archivo de salida para las lecturas reverse
+../data/samp1_R1.fastq.gz ##Ruta hacia las lecturas crudas forward
+../data/samp1_R2.fastq.gz ##Ruta hacia las lecturas crudas reverse
+
+```
+
+]
+
+---
+
+## Limpieza
+
+De manera posterior a la limpieza de las lecturas, es muy importante analizar la calidad de las lecturas procesadas:
+
+---
+class: inverse, center, middle
+
+# 7: Alineamiento
+---
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/RNAseq_workflow2.png")
+```
+
+---
+
+## Alineamiento
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/ReadAlignment.png")
+```
+Buscar la región del genoma/transcriptoma a partir de la cual se originaron las lecturas
+
+---
+
+## Alineamiento
+## Spliced reads 
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/SplicedReads2.png")
+```
+
+---
+
+## Splice aware
+
+- TopHat 2
+```{r, out.width="600px", fig.align='center',echo = F}
+knitr::include_graphics("./Images/SpliceAware.png")
+```
+
+--
+- HISAT
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/HISAT.png")
+```
+
+--
+- STAR
+```{r, out.width="400px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/STAR.png")
+```
+
+---
+
+## Alineamiento
+## Pseudo-alineadores
+
+Pseudo-alineadores (quasi-alineadores):
+
+- Kallisto
+
+- Sailfish
+
+- **Salmon**
+
+```{r}
+knitr::include_graphics("https://combine-lab.github.io/salmon/images/SalmonLogo.png")
+```
+
+---
+
+## Alineamiento
+## Pseudo-alineadores
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/Pseudoalignment.png")
+```
+
+---
+
+## Alineamiento
+## Pseudo-alineadores
+
+```{r, out.width="500px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/PseudoAlignment1.png")
+```
+
+--
+```{r, out.width="500px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/PseudoAlignment2.png")
+```
+
+---
+
+## Alineamiento
+## Pseudo-alineadores
+
+```{r, out.width="600px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/PseudoAlignment3.png")
+```
+
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+## Generar índice del transcriptoma
+.scroll-output[
+Para ello vamos a requerir:
+
+- Archivo **Fasta** del transcriptoma de referencia del humano.
+
+Descargado del sitio de [GeneCode](https://www.gencodegenes.org/human/)
+
+
+- Código para genear el índice
+
+```{bash, echo = T, eval = F}
+salmon index -t ../reference/Homo_sapiens.GRCh38.cdna.all.fa ##Ruta hacia el archivo fasta del transcriptoma de referencia
+-i ../reference/hsa_v38_gencode ##Ruta para almacenar los archivos generados del índice
+```
+
+`-t`: Ubicación al archivo Fasta del transcriptoma
+
+`-i`: Ubicación para salvar el índice
+
+`--genecode`: El Fasta del transcriptoma de referencia está en formato de GENECODE
+
+]
+---
+## Cuantificar la abundancia de los transcritos
+.scroll-output[
+Requerimientos:
+
+- Archivos **Fastq** de las lecturas -> Paired end R1 y R2
+
+Ubicados en el folder de `Output/Cutadapt`
+
+- Índice generado en el paso anterior
+
+- Código para producir cuantificar los transcritos
+
+```{bash, echo = T, eval = F}
+salmon quant -i ../reference/hsa_v38_gencode
+-l A ##Opción para permitir a salmon deducir de forma automática las características de la libreria
+-1 ../Output/Cutadapt/samp1_clean_R1.fastq.gz
+-2 ../Output/Cutadapt/samp1_clean_R2.fastq.gz
+-p 8 ##Número de cores para paralelizar el proceso
+--validateMappings 
+-o ../Output/salmon_quants/samp1_quant
+```
+
+`-i`: Ubicación del índice
+
+`-l`: Tipo de librería
+
+`-1 y -2`: Ubicación a las lecturas R1 y R2
+
+`-o`: Ubicación para almacenar los resultados
+
+
+```{bash engine.opts = '-l', eval = F, echo = T, include = F}
+##Crear un directorio para almacenar los datos de los conteos
+mkdir -p ../salmon_quant
+##Llamar salmon para realizar el conteo
+salmon quant -i ../transcriptome/genecode.v37.salmon141 \
+             -l A \
+             -1 ../Data/s1_R1.fastq.gz -2 ../Data/s1_R2.fastq.gz \
+             -p 6 --validateMappings \
+             -o ../salmon_quant/s1_quant
+```
+
+]
+---
+
+class: inverse, center, middle
+
+# 8: Tximeta y Tximport
+---
+## Recordatorio
+
+¿Dónde estamos?
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("./Images/RNAseq_workflow2.png")
+```
+
+---
+
+## Recordatorio
+
+¿Dónde estamos?
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("Images/worflowTximeta.png")
+```
+ 
+---
+
+## Tximeta
+
+Paquetería que conserva 
+
+```{r, out.width = "650px",fig.align='center'}
+knitr::include_graphics("https://journals.plos.org/ploscompbiol/article/figure/image?size=large&id=10.1371/journal.pcbi.1007664.g001")
+```
+
+---
+
+## Importar datos
+
+
+Utilizamos `tximeta` para importar los datos. 
+
+Para ello requerímos de una tabla de metadatos con información de las muestras
+
+```{bash, echo = T, eval =T}
+
+#La tabla se ubica en el directorio de salmon_quants con el nombre de metadata.txt
+ls ../data/salmon_quants
+```
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+
+## Importar datos
+
+.scroll-output[
+Importamos la inform
+ación de cada muestra
+
+```{r, echo=TRUE, eval = T}
+##Lee la tabla de metadatos en R
+coldata <- read.table(here("results/salmon_quants/metadata.txt"), he = T, stringsAsFactors = T, sep = "\t")
+##Nombra las filas de la tabla empleando la columna de los id únicos
+rownames(coldata) <- coldata$unique_id
+##Crea una nueva columna que contenga la ruta hacia los archivos quant.sf
+coldata <- dplyr::mutate(coldata, files = file.path(here("results/salmon_quants"), paste0(coldata$key, "_quant"), "quant.sf"))
+##Genera una columna para verificar que las rutas hacia los archivos quant.sf fueron creadas correctamente
+coldata <- mutate(coldata, file_exist = file.exists(coldata$files))
+##Asigna una columna llamada names que contenga el nombre de los directorios de cada muestra
+coldata <- mutate(coldata, names = paste0(coldata$key, "_quant"))
+```
+
+Importar los datos usando `tximeta` 
+
+```{r echo=TRUE, eval = T, include = FALSE}
+se <- tximeta(coldata)
+```
+
+]
+
+---
+class: inverse, center, middle
+
+# 9: Objeto Summarized Experiment
+---
+
+.center2[
+```{r, out.width="700px", echo=FALSE}
+knitr::include_graphics("./Images/Slots.png")
+```
+]
+---
+
+## Summarized Experiment
+
+```{r, out.width="400px", fig.align='center',echo = FALSE}
+knitr::include_graphics("./Images/Summarized_experiment.png")
+```
+
+---
+## Summarized Experiment
+
+```{r, out.width="400px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/ColData.png")
+```
+
+---
+
+## Summarized Experiment
+## ColData
+
+.scroll-output[
+- El cajón o *slot* correspondiente a `ColData` contiene la tabla de metadatos `coldata` empleada para importar las cuentas con `tximeta`
+
+
+- Para acceder a **.red[ColData]** usar el siguiente comando:
+
+```{r, echo = TRUE}
+colData(se)
+```
+]
+
+---
+
+## Summarized Experiment
+## ColData
+
+.scroll-output[
+- El slot **ColData** es un objeto con clase de *DataFrame*
+
+```{r, echo = T, include = FALSE}
+class(colData(se))
+```
+
+- *Rownames* de **ColData** corresponden a los *Colnames* en el slot **Assay**- **.red[Importante para análisis con DESeq2]**
+
+```{r, echo = T, include = FALSE}
+rownames(colData(se))
+```
+
+]
+---
+
+## Summarized experiment
+
+```{r, out.width="400px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/RowRanges.png")
+```
+
+---
+## Summarized experiment
+## rowRanges
+
+.scroll-output[
+- El cajón de `rowRanges` es un objeto de tipo *GRanges* que hace referencia a las coordenadas de cada transcrito y su anotación correspondiente
+
+
+- Para acceder al **.red[rowRanges]** usar:
+
+```{r, echo = T}
+rowRanges(se)
+```
+
+]
+---
+
+## Summarized experiment
+
+```{r, out.width="400px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/Assay.png")
+```
+
+---
+## Summarized experiment
+## Assay
+
+.scroll-output[
+- El *slot* `assay` almacena la información de las cuentas para cada transcrito dividida en tres niveles:
+
+```{r, echo = T}
+assayNames(se)
+```
+
+- Para acceder a la matriz de cuentas estimadas por *Salmon*, correr:
+
+```{r, echo = T}
+head(assay(se), 5)
+```
+
+]
+---
+## Summarized experiment
+## Assay
+- Las matriz de abundancia *(TPM)* puede obtenerse:
+
+.code70[
+```{r, echo = T}
+## Obtener matriz de TPM
+head(se@assays@data$abundance, 5)
+```
+]
+
+---
+## Summarized experiment
+
+.scroll-output[
+¿Recuerdan a qué tiene que ser igual *Rownames* del slot colData?
+
+
+.code90[
+```{r, echo = T}
+rownames(colData(se))
+```
+
+```{r, echo=T}
+colnames(assay(se))
+```
+
+```{r, echo = T}
+## Comprobar que rownames de colData es igual a colnames de assay
+row.names(colData(se)) == colnames(assay(se))
+```
+
+
+```{r, echo = T, include = F}
+##Para obtener las cuentas a nivel de gen utiliza
+gse <- summarizeToGene(se)
+```
+
+]
+]
+
+---
+
+class: inverse, center, middle
+
+# 10: Exploración de los datos
+---
+
+
+.center2[
+```{r, out.width="700px", echo = F}
+knitr::include_graphics("./Images/PCAplot.png")
+```
+]
+
+---
+## Exploración de datos
+## ¿Por qué es importante explorar los datos?
+
+--
+
+- Paso previo al análisis de expresión diferencial
+
+--
+
+- Análisis de calidad de los datos
+
+--
+
+- Permite conocer la congurencian entre individuos o réplicas 
+
+--
+
+- Mediante gráficos, visualizar comportamiento de los datos `r icons::fontawesome(name = "chevron-right")` Outliers
+
+---
+## Exploración de datos
+
+.pull-left[
+```{r, out.width="400px", echo = F}
+knitr::include_graphics("./Images/PCAplot2.png")
+```
+
+]
+--
+.pull-right[
+```{r, out.width="400px", echo = F}
+knitr::include_graphics("./Images/Heatmap.png")
+```
+
+]
+
+---
+## Exploración de datos
+
+.pull-left[
+```{r, out.width="400px", echo = F}
+knitr::include_graphics("./Images/PCAplot2.png")
+```
+**.red[PCA]**
+]
+
+.pull-right[
+```{r, out.width="400px", echo = F}
+knitr::include_graphics("./Images/Heatmap.png")
+```
+**.red[Heatmap]**
+]
+
+---
+## PCA
+
+--
+
+- Análisis de componentes principales
+
+--
+
+- Método algebraico para reducir la dimensionalidad de juegos de datos complejos (múltiples variables)
+
+--
+
+- Reducción de dimensionalidad o variables permite un análisis exploratorio más intuitivo
+
+--
+
+.blockquote[Reducción de variables implica  preservar y captar la mayor información sobre los datos
+]
+
+---
+## PCA
+## Normalización de los datos
+--
+
+```{r, out.width="350px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/zscore.png")
+```
+
+Escalación de los datos `r icons::fontawesome(name = "chevron-right")` Normalización para hacerlos más comparables
+
+--
+
+```{r, out.width="350px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/covariancematrix.png")
+```
+
+Busqueda de correlación entre las variables `r icons::fontawesome(name = "chevron-right")` correlación positiva o negativa
+
+---
+## PCA
+
+.center[
+![PCA](./Images/PCA2d.gif)
+]
+
+--
+.blockquote[Los componentes principales son los nuevos ejes que maximizan la distancia de los datos al origen
+]
+
+---
+## PCA
+## Componentes principales
+
+--
+
+- El .green[primer componente] es aquel en el que los datos presentan la mayor separación (variación)
+
+--
+
+- El .orange[segundo componente] es el que tiene la segunda mayor separación entre los datos y es perpendicular al primer componente
+
+--
+
+- ¿Cuantos componentes existen? `r icons::fontawesome(name = "chevron-right")` tantas variables en el juego de datos
+
+
+
+---
+## PCA
+## Componentes principales
+
+- Cada componente principal tiene asociado un eigenvector (vector unitario) y un eigenvalue (cantidad escalar)
+
+--
+
+- Los eigenvalues son la suma del cuadrado de las distancias de los puntos proyectados sobre dicho componente principal
+
+--
+
+- Los eigenvalues permiten seleccionar cuál es el componente principal que explica la mayor variación en los datos
+
+---
+## PCA
+
+```{r, out.width="450px", fig.align='center', echo = F}
+knitr::include_graphics("./Images/Screeplot.png")
+```
+Screeplot
+
+
+---
+## PCA
+
+- En sets de datos de RNAseq, el PCA permite visualizar la distancia o congruencia de los datos
+
+--
+
+- Generalmente son gráficas de puntos (muestras) en dos dimensiones (dos componentes) que resumen las principales fuentes de varianza
+
+--
+.center[
+```{r, out.width="400px", echo = F}
+knitr::include_graphics("./Images/PCARNAseq.png")
+```
+]
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+## Exploración de los datos
+### Creación del objeto DDS
+
+.scroll-output[
+
+1. Crear un objeto `DESeq` (*SummarizedExperiment*) a partir del objeto `gse`
+```{r, echo = T, eval = T}
+dds <- DESeqDataSet(se = gse, ##Objeto SummarizedExperiment que contiene la matriz de cuentas crudas
+                    design = ~ Treatment) ##Variable con los grupos experimentales a contrastar. Forma parte de las columnas de coldata
+```
+
+2. Visualizar el grupo de referencia o **control** de la variable seleccionada
+```{r, echo = T, eval = T}
+##El  primer nivel o elemento es el grupo control  ("CT")
+levels(dds$Treatment)
+```
+
+3. Dependiendo de la pregunta a responder, recodifica el  grupo de referencia:
+```{r, echo = T, eval = T}
+dds$Treatment <- relevel(dds$Treatment, "siRNA_control")
+
+levels(dds$Treatment)
+```
+
+4. Ya que los genes que muestran bajo número de cuentas (abundancia) no nos interesan en el análisis, selecciona aquellos que muestran mayor abundancia usando un punto de corte
+```{r, echo = T, eval = T}
+##Recupera los genes que muestran más de 1 cuenta en al menos 3 muestras
+keep <- rowSums(counts(dds) >= 1) >=3
+
+##Visualiza cuántos genes pasaron el filtro de abundancia
+table(keep)
+
+##Corta los genes que pasaron el filtro de abundancia del objeto dds
+dds <- dds[keep, ]
+```
+
+]
+
+---
+## Exploración de los datos
+### PCA
+
+.scroll-output[
+
+5. Para explorar los datos por medio del PCA necesitamos normalizar las cuentas crudas para que  los datos sean más comparables entre sí. Empleamos la transformación *regularized-logarithm transformation* recomendada para juegos de datos con una n < 30:
+```{r, echo = T, eval = T}
+rld <-  rlog(dds, blind = F)
+```
+
+6. Realiza el PCA empleando el paquete `PCAtools`:
+```{r, echo = T, eval = T, dpi=300}
+##Indicarle a  la función pca que los datos deben de ser escalados para que sean más comparables entre sí
+pca <- pca(assay(rld), metadata = colData(rld), scale = T)
+
+##Graficar el resultado del PCA mostrando las etiquetas de acuerdo al nombr + tratamiento + réplica y coloreando los puntos de acuerdo al tipo de tratamiento
+biplot(pca, lab = rownames(colData(rld)), colby = "Treatment")
+```
+
+]
+
+---
+class: inverse, center, middle
+
+# 11: Análisis de expresión diferencial
+---
+## Análisis de expresión diferencial (DE)
+
+Prueba estadística para obtener los genes que varían entre las condiciones experimentales
+
+```{r, out.width = "750px",fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/hbctraining/DGE_workshop/master/img/de_theory.png")
+```
+
+---
+
+## Pasos en el DE
+
+```{r, out.width = "350px",fig.align='center'}
+knitr::include_graphics("https://github.com/hbctraining/DGE_workshop/raw/master/img/deseq2_workflow_separate.png")
+```
+
+---
+## Normalización 
+
+
+Es el primer paso del análisis de expresión diferencial y es necesario para realizar comparaciones acertadas entre muestras. 
+
+--
+
+Las cuentas crudas están conformadas por un componente **"interesante"** (la expresión de RNA) y componentes "no interesantes" (como los efectos de lote, ruido de la plataforma, etc.).
+
+--
+
+La normalzación escala las cuentas para tratar de reducir los componentes "no interesantes" y poder comparar las muestras entre si. 
+
+---
+
+## Criteríos para normalizar
+
+Se puede normalizar considerando:
+
+- La profundidad (tamaño de librería)
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("https://hbctraining.github.io/DGE_workshop/img/normalization_methods_depth.png")
+```
+
+---
+
+## Criteríos para normalizar
+
+Se puede normalizar considerando:
+
+- El tamaño del gen
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("https://hbctraining.github.io/DGE_workshop/img/normalization_methods_length.png")
+```
+
+
+---
+
+## Criteríos para normalizar
+
+Se puede normalizar considerando:
+
+- Composición de RNA
+
+```{r, out.width = "350px",fig.align='center'}
+knitr::include_graphics("https://hbctraining.github.io/DGE_workshop/img/normalization_methods_composition.png")
+```
+
+
+---
+## Métodos comunes
+
+.scroll-output[
+
+| Método de normalización | Descripción | Factores de evaluación | Recomendaciones de uso |
+|:-----------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------:|
+| CPM (cuentas por millón): cuentas escalados por el número total de lecturas | profundidad de secuenciación | comparaciones de cuentas de genes entre réplicas del mismo grupo de muestras| NO para comparaciones dentro de la muestra o análisis de DE.| 
+| TPM (transcritos por kilobase por millón de lecturas): cuentas por longitud de transcripción (kb) por millón de lecturas mapeadas | profundidad de secuenciación y longitud de genes| comparaciones de cuentas de genes dentro de una muestra o entre muestras del mismo grupo de muestras| NO para análisis de DE. |
+| RPKM/FPKM (lecturas/fragmentos por kilobase de exón por millón de lecturas/fragmentos mapeados| similar a TPM, profundidad de secuenciación y longitud del gen | comparaciones de cuentas entre genes dentro de una muestra | NO para comparaciones entre muestras o análisis de DE.|
+| Mediana de ratios de DESeq2 | cuentas divididas por factores de tamaño específicos de la muestra determinados por la mediana del ratio de cuentas de genes en relación con la media geométrica por gen | profundidad de secuenciación y composición del RNA | comparaciones de cuentas de genes entre muestras y para el análisis de DE; NO para comparaciones dentro de la muestra |
+| La media cortada de los valores M de EdgeR (TMM) | utiliza una media recortada ponderada de los ratios de expresión logarítmica entre las muestras | profundidad de secuenciación | composición de RNA y longitud de los genes. |
+
+
+]
+
+---
+## DESeq2
+
+- Normalización para análisis de expresión diferencial:
+
+  - Factor de normalización de `DESeq2`
+
+- Normalización para visualización u otras aplicaciones:
+
+  - Variance stabilizing transformation (VST)
+  
+  - Regularized-logarithm transformation (rlog)
+
+---
+## Normalización por ratios de medias geométricas (DESeq2)
+
+.scroll-output[
+
+`DESeq2`ajusta a un modelo lineal generalizado (GLM) de la familia binomial negativa (NB).
+
+```{r}
+# tabla con cuentas 
+df <- tibble(gene = c("gene1", "gene2"),
+                 muestraA = c(1749, 35),
+                 muestraB = c(943, 29)
+                 )
+df
+```
+
+1. Crea una pseudo-referencia por muestra (promedio geometrico por fila) `sqrt(muestraA * muestra B)`
+```{r}
+# Calcular el promedio geometrico
+df <- df %>%
+  rowwise() %>% 
+  mutate(prom_geom = sqrt(muestraA * muestraB))
+df
+```
+
+2. Se calcula la fración `muestra/pseudo-referencia`
+```{r}
+# Dividir las cuentas entre el promedio geometrico
+df <- df %>% 
+  rowwise() %>% 
+  mutate(muestraA_pseudo_ref = muestraA / prom_geom) %>% 
+  mutate(muestraB_pseudo_ref = muestraB / prom_geom)
+df
+```
+
+3. Se calcula un factor de normalización (size factor) utilizando la `mediana` por columnas.
+```{r}
+# Se calcula el factor de normalizacion usando la mediana para cada muestra
+norm_factor_muestraA <- median(df$muestraA_pseudo_ref)
+norm_factor_muestraA
+
+# Repetimos el proceso para la muestra B
+norm_factor_muestraB <- median(df$muestraB_pseudo_ref)
+norm_factor_muestraB
+
+```
+
+4. Se dividen las `cuentas crudas/size factor` para calcular las cuentas normalizadas.
+```{r}
+# Columnas con las cuentas crudas
+df %>% 
+  dplyr::select(gene, muestraA, muestraB)
+
+# Dividir las cuentras entre el factor de normalización
+df$norm_muestraA <- df$muestraA/norm_factor_muestraA
+df$norm_muestraB <- df$muestraB/norm_factor_muestraB
+
+# Columnas con las cuentas normalizadas
+df %>%  
+  dplyr::select(norm_muestraA, norm_muestraB)
+```
+
+
+]
+---
+
+## Otras transformaciones
+
+.scroll-output[
+
+Puedes realizar otras transformaciones en `DESeq2` para estabilizar la varianza a través de los differentes valores promedio de expresión.  
+
+```{r, dpi=300}
+# Grafica de cuentas crudas
+meanSdPlot(counts(dds), ranks = F)
+
+# Gráfica de cuentas en escala log2
+meanSdPlot(log2(counts(dds) +1), ranks = F)
+```
+
+
+```{r echo=TRUE, dpi=300}
+# variance stabilizing transformation (VST), (Anders and Huber 2010)
+vsd <- vst(dds, blind = FALSE)
+head(assay(vsd), 3)
+
+# regularized-logarithm transformation (rlog), (Love, Huber, and Anders 2014)
+rld <- rlog(dds, blind = FALSE)
+head(assay(rld), 3)
+
+# Normalización con el factor de normalizacion 
+dds <- estimateSizeFactors(dds)
+
+# Juntar los datos de las tres normalizaciones
+df <- bind_rows(
+  as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %>%
+         mutate(transformation = "log2(x + 1)"),
+  as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"),
+  as_data_frame(assay(rld)[, 1:2]) %>% mutate(transformation = "rlog"))
+  
+# Renombrar columnas
+colnames(df)[1:2] <- c("x", "y")  
+
+# Nombre de las graficas
+lvls <- c("log2(x + 1)", "vst", "rlog")
+
+# Agrupar los tres tipos de normalizacion en grupos como factores
+df$transformation <- factor(df$transformation, levels=lvls)
+
+# Plotear los datos
+ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
+  coord_fixed() + facet_grid( . ~ transformation)  
+ 
+```
+
+
+]
+
+---
+## Dispersión
+
+La dispersión es una medida de la variabilidad de los datos como (varianza, sd, etc.). En `DESeq2` se utiliza `α`:
+
+$$ \alpha \propto 1/mean $$ 
+$$ \alpha \propto variance $$ 
+
+Así que **La dispersión es mayor para genes con poca abundancia y menor para genes abundantes**. 
+
+Y la **dispersión refleja la varianza**.
+
+.blockquote[
+`DESeq2` asume que los genes con similar expresión tienen similar dispersión
+]
+
+---
+
+## Ajustando la dispersión
+
+
+```{r, out.width = "450px",fig.align='center'}
+knitr::include_graphics("https://github.com/hbctraining/DGE_workshop/raw/master/img/deseq_dispersion1.png")
+```
+
+
+---
+
+## Reduciendo la dispersión
+
+```{r, out.width = "750px",fig.align='center'}
+knitr::include_graphics("https://github.com/hbctraining/DGE_workshop/raw/master/img/deseq_dispersion2.png")
+```
+
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 80%
+---
+
+## Ejercicio
+
+.scroll-output[
+
+La librería de `DESeq2` normaliza y realiza el análisis de expresión diferencial en una sola función. Así que ya realizamos el análisis, vamos a verlo:
+
+
+1. Corre la función `DESeq()` para normalizar, estimar la dispersión y ajustar los datos al modelo binomial negativo.
+```{r, echo = T, eval = T}
+dds  <- DESeq(dds)
+```
+
+2. Para obtener los resultados del análisis de expresión diferencial usa la función `results`
+```{r, echo = T, eval = T}
+##Usemos la función results con los parámetros por default
+res <- results(dds)
+
+##Visualiza el objeto que contiene los resultados
+res
+
+##Obten el número de genes sobre- y sub-expresados de acuerdo a la prueba estadística
+summary(res)
+```
+
+3. Explora el objeto para tener información del contenido de cada columna:
+```{r, eval = T, echo=T}
+mcols(res, use.names = TRUE)
+```
+]
+
+---
+
+## Análisis de expresión diferencial
+
+
+**_Warning_** 
+
+.content-box-red[Los parámetros por default de la función `res()` hacen referencia a la siguiente hipótesis nula:]
+
+.blockquote[La expresión del Gen X en la condición problema es igual a la condición control]
+
+Si deseamos modificar el *cutoff* o valor de corte del log2FoldChange:
+
+---
+
+.scroll-output[
+```{r,  echo = T, eval = T}
+##Emplea los argumentos lfcthreshold y alpha para especificar ambos puntos de corte de forma simultánea
+res_LFC <- results(dds, lfcThreshold = 1, alpha = 0.05)
+
+res_LFC
+
+summary(res_LFC)
+```
+
+**NUNCA** realices la prueba de expresión diferencial con un valor de corte X (log2FoldChange) y posteriormente filtres los genes diferencialmente expresados empleando otro valor de log2FoldChange.
+
+]
+---
+class: inverse, center, middle
+
+# 12: Visualización de los resultados
+---
+
+.center[
+### ¿Cuántos tipos de gráficos conoces para visualizar resultados del análisis DE?
+]
+
+.pull-left[
+```{r, out.width="350px", echo = F}
+knitr::include_graphics("./Images/MAplot.png")
+```   
+]
+
+.pull-right[
+```{r, out.width="350px", echo = F}
+knitr::include_graphics("./Images/Volcanoplot.png")
+```
+]
+
+---
+.center[
+### ¿Cuántos tipos de gráficos conoces para visualizar resultados del análisis DE?
+]
+
+.pull-left[
+```{r, out.width="350px", echo = F}
+knitr::include_graphics("./Images/MAplot.png")
+```
+**.green[MAplot]**
+]
+
+.pull-right[
+```{r, out.width="350px", echo = F}
+knitr::include_graphics("./Images/Volcanoplot.png")
+```
+**.green[Volcano plot]**
+]
+
+---
+# MAplot
+.scroll-output[
+
+Gráfico que representa la distribución de los genes o transcritos en las comparaciones de interés
+
+**M** eje y de *minus*:
+
+.content-box-blue[$$logTx - logCT = logTx/CT$$
+]
+
+**A** eje x de *average* -> Promedio de las cuentas normalizadas para cada gen en las condiciones experimentales de la o las variables de interés 
+
+Para generar el **MAplot** usa:
+
+.code90[
+```{r, eval = T, echo = T, dpi=300}
+##Es importante que recuerden que la hipótesis nula que se probó fue
+##"El lfc del gen n es igual a 0" por lo tanto los genes coloreados son...
+plotMA(res)
+```
+]
+]
+
+---
+# MAplot
+
+.scroll-output[
+Para disminuir la sobre-estimación del LFC de genes que:
+
+- Son poco abundantes
+
+- Tienen alta dispersión
+
+Usemos la función `lfcShrink` de la librería *.red[apeglm]*
+
+
+```{r, echo = T, eval = T, dpi=300}
+res_shrink <- lfcShrink(dds = dds, res = res, coef = "Treatment_siRNA_NRF2_vs_siRNA_control"
+, type = "apeglm")
+
+summary(res_shrink)
+
+plotMA(res_shrink,  ylim = c(-3, 3))
+```
+]
+
+---
+# Volcano plot
+
+.scroll-output[
+De manera similar al MAplot con el volcano plot visualizamos los genes que muestran expresión diferencial en nuestra condición de interés
+
+- En el eje y se grafica el -log10 de padj
+
+- En el eje x se grafica el lfc o *log2foldchange*
+
+Usa la función personalizada volcanoplotR del script de funciones:
+```{r, echo = T, eval = T, dpi=300}
+##En los argumentos logfc y padj utiliza los mismos valores empleados en la función results
+res_shrink <- as.data.frame(res_shrink)
+volcanoplotR(res_shrink, logfc = 0, p.adj = 0.1)
+```
+]
+
+---
+
+## Heatmap
+
+El *h   eatmap* nos permite visualizar la expresión de los genes diferencialmente expresados en terminos de las cuentas normalizadas
+
+Consideraciones:
+
+- Usar los valores de las cuentas normalizadas para una mejor comparación entre muestras
+
+- Escalar los valores de las cuentas (renglones) para visualizar las diferencias en la expresión
+
+Usaremos la librería de *.red[pheatmap]*
+
+---
+# Heatmap
+
+.scroll-output[
+
+1. Obten la matriz de cuentas normalizadas:
+```{r, echo = T, eval = T}
+norm_counts <- counts(dds, normalized = T)
+```
+
+2. Guarda un data.frame con los resultados de los genes mostrando expresión diferencial significativa:
+```{r, echo = T,  eval = T, error = T}
+deg <- res_shrink %>% dplyr::filter(log2FoldChange > 0 & padj < 0.1 |
+                                                     log2FoldChange < 0 & padj < 0.1)
+
+head(deg)
+```
+
+3. Usando la librería de `pheatmap()` obten la gráfica
+```{r, echo = T, eval = T,  dpi=300, fig.align='center'}
+##Genera una paleta de colores 
+RedBu <- brewer.pal(n = 10, name = "RdBu")
+RedBu <- rev(RedBu)
+
+pheatmap(norm_counts[rownames(deg), 1:6], ##Corta los genes con expresión diferencial de la matriz normalizada
+         scale = "row", ##Calcula los valores z por fila (gen)
+         color = RedBu, ##Nombre de la paleta de colores
+         show_rownames = F, ##No mostrar el nombre de los genes en la gráfica
+         show_colnames = F, ##No mostrar el nombre de las muestras en la gráfica
+         clustering_distance_rows = "euclidean", ##Especifíca la medida de la distancia entre filas
+         clustering_distance_cols = "euclidean", ##O columnas
+         clustering_method = "single", ##Método de agrupamiento jerárquico
+         border_color = NA, 
+         annotation_col = coldata[1:6, c(2, 6)]) ##Añadir información relacionada a las columnas)
+```
+]
+
+---
+
+class: inverse, center, middle
+# 13: Anotación funcional
+
+---
+
+## Anotación funcional
+
+¿Cuáles son los métodos más comunes para anotar funcionalmente los genes diferencialmente expresados?
+
+
+
+---
+
+## ORA
+
+- Primer método para realizar análisis de vías
+
+- Requiere de una lista de genes diferencialmente expresados 
+
+- Archivo con la colección de vías o sets de genes curados manualmente
+
+---
+class: center, middle
+background-image: url("./Images/hands_on.png")
+background-size: 90% 90%
+---
+
+## ORA
+
+.scroll-output[
+
+**Pasos para realizar ORA**
+
+1. Obten de  manera independiente la lista de los genes sobre- y sub-expresados
+```{r, echo = T, eval = T}
+up <- deg %>% dplyr::filter(log2FoldChange > 0)
+down <- deg %>% dplyr::filter(log2FoldChange < 0)
+```
+
+2. Convierte los ensembl id a entrez_gene id y hgnc_symbol
+```{r, echo = T, eval = T}
+##Descarga los datos desde el sitio de ensembl usando el paquete de biomaRt
+ensembl <- useMart("ensembl")
+ensembl <- useDataset("hsapiens_gene_ensembl", mart = ensembl)
+
+##Con la función id_converter() obten los entrezgene_id y hgnc_symbol
+##Asigna los nombres de las filas (rownames) a una columna
+up <- rownames_to_column(up, var = "ensembl_gene_id")
+up <- id_converter(mart = ensembl, ##Objeto con la información de la base de datos  de ensembl
+            input = up, ##Lista de genes de entrada
+            attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol"), ##Nombre de los atributos que se desean obtener
+            filter = "ensembl_gene_id")
+```
+
+
+3. Carga la colección de vías o set de genes:
+```{r, echo = T, eval = T}
+go <- read.gmt(here("data/c5.go.bp.v7.4.entrez.gmt"))
+```
+
+4. Ejecuta el ORA:
+```{r, echo = T, eval = T}
+ego_up <- enricher(gene = up$entrezgene_id, ##Vector con los nombres o id de los genes
+                   TERM2GENE = go, ##Colección de vías o sets de genes
+                   pvalueCutoff = 0.05, ##Punto de corte para obtener vías representadas significativamente
+                   pAdjustMethod = "BH") ##Método para ajustar los valores de p
+```
+
+]
+
+--- 
+
+## ORA
+
+Visualización de los resultados:
+
+Las librerías **clusterProfiler** y **enrichplot** cuentan con una variedad de funciones para visualizar los resultados:
+
+.pull-left[
+
+No aglomerativos
+
+**Dotplot**:
+```{r, echo = T, eval = T}
+dotplot(ego_up, showCategory = 10)
+```
+
+**Barplot**:
+```{r, echo = T, eval = T}
+barplot(ego_up, showCategory = 10)
+
+```
+
+]
+
+.pull-right[
+
+Aglomerativos
+```{r, echo = F, eval = T , include = F}
+ego_up <- pairwise_termsim(ego_up)
+```
+
+**emapplot**
+```{r, echo = T, eval = T}
+emapplot(ego_up, showCategory = 10)
+```
+
+**Treeplot**
+```{r, echo = T, eval = T}
+treeplot(ego_up)
+```
+
+]
+
+---
+
+## ORA
+
+.pull-left[
+
+Ventajas:
+
+`r icons::icon_style(icons::fontawesome(name = "check"), fill = "green")` Analiza la fracción de genes que muestran expresión diferencial significativa
+
+`r icons::icon_style(icons::fontawesome(name = "check"), fill = "green")` Permite asignar un contexto biológico a los resultados del análisis de expresión diferencial empleando información curada
+
+`r icons::icon_style(icons::fontawesome(name = "check"), fill = "green")` Existen amplias herramientas en línea para conducir el análisis
+
+
+]
+
+.pull-right[
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` No toma en cuenta la relevancia de los valores de log2FoldChange o padj de los genes diferencialmente expresados
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` Utiliza solamente los genes diferencialmente expresados obtenidos de puntos de corte arbitrarios
+
+`r icons::icon_style(icons::fontawesome(name = "times"), fill = "red")` No considera la interacción entre genes y vías, los trata de manera independiente
+
+]
+
+---
+
+## GSEA
+
+GSEA surge como una alternativa al ORA ya que resuelve alguna de sus limitaciones. Para ello requiere de:
+
+- La lista completa de genes que se sometieron a un análisis de expresión diferencial. En este caso el objeto `res_shrink`
+- El cálculo de una métrica que considere o agregue los valores de la expresión y significancia estadística de cada gen.
+- La lista ordenada o *rankeada* los genes de acuerdo a la métrica calculada
+- Nuevamente, la colección de vías o set de genes 
+
+---
+
+## GSEA
+
+.scroll-output[
+
+Pasos para correr el GSEA:
+
+1. Convierte los id de los genes, empleando el objeto `res_shrink`
+```{r, echo  = T, eval = T, error = T}
+res_shrink <- as.data.frame(res_shrink)
+res_shrink <- rownames_to_column(res_shrink, var = "ensembl_gene_id")
+
+res_shrink <- id_converter(mart = ensembl, 
+                           input = res_shrink, 
+                           attributes = c("ensembl_gene_id", "entrezgene_id", "hgnc_symbol"),  
+                           filter = "ensembl_gene_id")
+```
+
+2. Calcula la métrica que agrega el log2FoldChange y padj. En este caso usa el producto de -log10(padj)*log2FoldChange
+```{r, echo = TRUE, eval = T, error = T}
+##Agrega una nueva columna al objeto res_shrink que contenga los valores de la métrica
+res_shrink <- dplyr::mutate(res_shrink, stat = -log10(res_shrink$padj)*res_shrink$log2FoldChange)
+```
+
+3. Ordena de forma descendente, respecto a la métrica, los genes:
+```{r, echo = T, eval = T, error = T}
+res_shrink <- dplyr::arrange(res_shrink, desc(stat))
+```
+
+4. Obten un vector nombrado que contenga el valor de la métrica y el id de los genes:
+```{r, echo = T, eval = T, error = T}
+genes <- res_shrink$stat
+names(genes) <- res_shrink$entrezgene_id
+```
+
+5. Carga la colección de vías:
+```{r, echo = T, eval = T}
+go <- gmtPathways(here("data/c5.go.bp.v7.4.entrez.gmt"))
+```
+
+6. Ejecuta el análisis:
+```{r, echo = T, eval = T, error = T}
+GSEA_res <- fgseaMultilevel(go, ##Objeto con la colección de vías o sets de genes
+                            genes, ##Vector nombrado de los genes rankeados
+                            maxSize = 500, minSize = 15)
+```
+
+]
+
+---
+
+## GSEA
+
+.scroll-output[
+Visualización de resultados
+
+Emplea un barplot para revisar los resultados del GSEA
+```{r, echo = T, eval = T, error = T}
+##Convierte los resultados de GSEA a un objeto de clase tidy y añade una nueva columna que nos indique si la vía está enriquecida de forma significativa
+GSEA_res <- as.tibble(GSEA_res) %>%
+  arrange(desc(NES)) %>%
+  mutate(Significance = ifelse(padj < 0.05, "Significant", "NS"))
+
+##Genera un barplot con los resultados
+barplot_GSEA(GSEA_res,  Head = 20, Tail = 20)
+```
+]
