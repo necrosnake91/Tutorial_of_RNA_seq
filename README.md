@@ -7,17 +7,17 @@ Please, be aware that this tutorial is split in two pipelines:
 
 **Long**
 
-<img src="./Rmd/Images/RNAseq_workflow 2.png" width="300">
+<img src="./html/Images/RNAseq_workflow 2.png" width="300">
 </img>
 
 **Short**
 
-<img src="./Rmd/Images/Short_pipeline.png" width="300">
+<img src="./html/Images/Short_pipeline.png" width="300">
 </img>
 
 ## Required packages
 
-<img src="./Rmd/Images/r-project-brands.svg" width="50">
+<img src="./html/Images/r-project-brands.svg" width="50">
 </img>
 
 Before running the analysis, please install the following R packages from CRAN:
@@ -29,7 +29,7 @@ Before running the analysis, please install the following R packages from CRAN:
 
 
 
-<img src="./Rmd/Images/bioconductor_logo_cmyk.svg" width="400">
+<img src="./html/Images/bioconductor_logo_cmyk.svg" width="400">
 </img>
 
 Also, make sure that you have installed the latest version of BioConductor. If not, run the next lines on R:
