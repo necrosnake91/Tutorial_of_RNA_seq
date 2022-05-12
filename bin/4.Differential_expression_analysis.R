@@ -2,19 +2,8 @@
 
 #--------------------------------------Packages--------------------------------
 ##Load the required packages
-library(tidyverse)
-library(tximeta)
-library(here)
-library(DESeq2)
-library(apeglm)
-library(PCAtools)
-library(Glimma)
-library(RColorBrewer)
-library(pheatmap)
-library(clusterProfiler)
-library(biomaRt)
-library(enrichplot)
-library(fgsea)
+packages <- c("tidyverse", "tximeta", "here", "DESeq2", "apeglm", "PCAtools", "Glimma", "RColorBrewer", "pheatmap", "clusterProfiler", "biomaRt", "enrichplot", "fgsea")
+lapply(packages, library, character.only = T)
 source("functions.R")
 #--------------------------------------Data importation--------------------------------
 ##Read the metadata file
@@ -31,6 +20,8 @@ rownames(coldata) <- coldata$unique_id
 se <-  tximeta(coldata)
 ##Get the counts by sumarizing at gene level
 gse <- summarizeToGene(se)
+##For the shorthest path unlock the next line and run it
+#load("../data/SummarizedExperimentObj.rdata")
 #-------------------------------------Data exploration---------------------------------
 ##Create the DESeq object using the  information stored in the tximeta summarizedExperiment
 dds <- DESeqDataSet(se = gse, 
