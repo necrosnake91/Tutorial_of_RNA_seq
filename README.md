@@ -6,10 +6,10 @@ Welcome to this GitHub repository. This repository was designed to provide you a
 Please, be aware that this tutorial is split in two pipelines:
 
 
-<div style="text-align: left"><strong>Long</strong></div><div style="text-align: right"><strong>Short</strong></div>
-
-<img src="./html/Images/RNAseq_workflow 2.png" width="200"><img src="./html/Images/Short_pipeline.png" width="200">
-
+<table><tr>
+<td> <img src="./html/Images/RNAseq_workflow 2.png" alt="Drawing" style="width: 450px;"/> </td>
+<td> <img src="./html/Images/Short_pipeline.png" alt="Drawing" style="width: 450px;"/> </td>
+</tr></table>
 
 ## Required packages
 
