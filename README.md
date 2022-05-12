@@ -6,15 +6,9 @@ Welcome to this GitHub repository. This repository was designed to provide you a
 Please, be aware that this tutorial is split in two pipelines:
 
 
-**Long**
+<div style="text-align: left"><strong>Long</strong></div><div style="text-align: right"><strong>Short</strong></div>
 
-<img src="./html/Images/RNAseq_workflow 2.png" width="300">
-
-
-
-**Short**
-
-<img src="./html/Images/Short_pipeline.png" width="300">
+<img src="./html/Images/RNAseq_workflow 2.png" width="200"><img src="./html/Images/Short_pipeline.png" width="200">
 
 
 ## Required packages
@@ -33,6 +27,7 @@ Before running the analysis, please install the following R packages from CRAN:
 <img src="./html/Images/bioconductor_logo_cmyk.svg" width="400">
 
 Also, make sure that you have installed the latest version of BioConductor. If not, run the next lines on R:
+
 
 ```
 if (!requireNamespace("BiocManager", quietly = TRUE))
