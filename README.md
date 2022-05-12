@@ -5,20 +5,21 @@ Hello everyone!
 Welcome to this GitHub repository. This repository was designed to provide you a wide view for the Differential Expression (DE) analysis using the bioconductor package **[DESeq2](http://bioconductor.org/packages/release/bioc/html/DESeq2.html)**. It is based on the pipeline published by [Michael Love](https://bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html).
 Please, be aware that this tutorial is split in two pipelines:
 
+
 **Long**
 
 <img src="./html/Images/RNAseq_workflow 2.png" width="300">
-</img>
+
+
 
 **Short**
 
 <img src="./html/Images/Short_pipeline.png" width="300">
-</img>
+
 
 ## Required packages
 
 <img src="./html/Images/r-project-brands.svg" width="50">
-</img>
 
 Before running the analysis, please install the following R packages from CRAN:
 
@@ -30,7 +31,6 @@ Before running the analysis, please install the following R packages from CRAN:
 
 
 <img src="./html/Images/bioconductor_logo_cmyk.svg" width="400">
-</img>
 
 Also, make sure that you have installed the latest version of BioConductor. If not, run the next lines on R:
 
