@@ -21,7 +21,7 @@ se <-  tximeta(coldata)
 ##Get the counts by sumarizing at gene level
 gse <- summarizeToGene(se)
 ##For the shorthest path unlock the next line and run it
-#load("../data/SummarizedExperimentObj.rdata")
+load("../data/SummarizedExperimentObj.rdata")
 #-------------------------------------Data exploration---------------------------------
 ##Create the DESeq object using the  information stored in the tximeta summarizedExperiment
 dds <- DESeqDataSet(se = gse, 
@@ -71,6 +71,8 @@ deg <- dplyr::filter(res_shrink, log2FoldChange > 0 & padj < 0.01 |
 ##Get the normalized counts matrix
 norm_counts <- counts(dds, normalized = T)
 ##Plot the heatmap
+##Get the coldata from the gse object
+coldata <- colData(gse)
 ##Obtain the annotation for the columns of the heatmap
 annotation_col <- data.frame(coldata[1:6, c(2, 4)])
 ##Select a nice palette
